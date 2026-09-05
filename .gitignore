@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+out/
+cache/
+broadcast/
+node_modules/
+.next/
+coverage/
+.DS_Store
+*.salt.json
