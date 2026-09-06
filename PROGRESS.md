@@ -28,4 +28,13 @@
 - Verification: formatting and build pass; full regression suite has 50 passing tests and no failures/skips. Auction adds 21 lifecycle/fuzz tests, 5 token-behavior tests and 3 stateful invariants (128 runs, depth 64). Stateful run cleanup verifies all final entitlements and zero remaining owed funds.
 - Rules, privacy/collateral trade-offs, cancellation penalties and integration boundaries are documented in docs/AUCTION.md. No public deployment or GitHub push; remote remains unconfigured.
 
-Next: chunk 3, connect auction winners to authenticated execution and the v4 surcharge hook.
+## Chunk 3: auction-authenticated v4 execution
+
+- Added PFDAExecutor, which verifies the auction/pool, identifies the caller as active winner, and implements transaction-scoped hook eligibility without a mutable registry.
+- Payer/output recipient are fixed to the caller; callback data is bound to a one-use request hash and the immutable manager. Eligibility clears before token settlement; reentrant swaps are blocked.
+- Added deadline/minimum-output checks, exact-input settlement and validation of hook/manager wiring.
+- Added 20 integration tests using real auction, executor, hook and v4 core: both directions/random amounts, activation/expiry, loser isolation, pool/auction isolation, stale-ID handover, cancelled auctions, proxy/router spoofing, rollback and reentry.
+- Full regression: 70 tests pass, no failures/skips; compilation and formatting pass. Existing 128-run/64-depth auction invariants remain green.
+- Documented wiring, caller authentication, ordinary trader access, supported modes and limitations in docs/EXECUTION.md. No public testnet deployment or GitHub remote yet.
+
+Next: chunk 4, wallet UI and repeatable scenario runner, including commitment-secret recovery and transaction receipts.

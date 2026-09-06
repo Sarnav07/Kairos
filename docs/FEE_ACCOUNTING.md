@@ -58,7 +58,7 @@ With native fees enabled, core composes protocol and LP fees using its ProtocolF
 
 Only fully filled exact-input ERC-20 swaps are supported. Native-currency pools, exact-output swaps and partial fills are rejected. Surcharge configuration is immutable and capped at 1% in this prototype. Tests use ordinary MockUSDC tokens and fixed liquidity; unusual token behaviors and arbitrary concentrated-liquidity configurations are outside this proof.
 
-`EligibilityFixture` and v4's `PoolSwapTest` are test utilities. In this fixture, eligibility grants the test router a discount; that router is public and is not a secure winner executor. Chunk 3 must supply auction-backed eligibility and an executor that authenticates the winner. Do not deploy this fixture arrangement. Eligibility must remain stable for the duration of a swap.
+`EligibilityFixture` and v4's `PoolSwapTest` are test utilities. In this fixture, eligibility grants the test router a discount; that router is public and is not a secure winner executor. Chunk 3 now supplies PFDAExecutor for auction-backed authentication (see EXECUTION.md), while retaining these isolated accounting tests. Do not deploy this fixture arrangement. Eligibility must remain stable for the duration of a swap.
 
 No contracts were deployed to a public testnet in this chunk. Local use of real core contracts is not a fork test against the deployed Unichain bytecode.
 

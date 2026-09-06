@@ -6,7 +6,7 @@
 
 MockUSDC is the intended demo token. The contract uses OpenZeppelin SafeERC20 and ReentrancyGuard from the already pinned v5.2.0 dependency. No additional dependencies were required.
 
-Auction-backed swap authentication is not implemented in this chunk. `activeWinner(auctionId)` returns a winning bidder; it is not the hook's executor eligibility interface. Chunk 3 must validate pool/auction correspondence and authenticate the bidder's execution path before granting a waiver.
+`activeWinner(auctionId)` returns a winning bidder; it is not the hook's executor eligibility interface. Chunk 3 now supplies PFDAExecutor to validate pool/auction correspondence and authenticate the bidder's execution path before granting a waiver. See EXECUTION.md.
 
 ## Schedule and auction rules
 
