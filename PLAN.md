@@ -24,10 +24,11 @@ Dates are targets; accounting correctness takes priority over stretch scope.
 
 - Commitments bind chain ID, auction contract, auction ID, bidder, bid amount, and a cryptographically random salt. The earlier three-field hash sketch omitted necessary identity/domain binding.
 - Specify a fixed schedule before bidding: commit close, reveal close, activation, expiry. Late finalization must not silently sell an extended or shifted right.
-- Choose and test deterministic equal-bid handling (proposed: earliest valid commitment).
+- Equal bids favor the earliest valid commitment (implemented and tested in chunk 2).
 - Explicitly handle zero valid reveals and finalization after expiry.
 - Highest valid bidder pays their own bid. Losing deposits remain refundable; proceeds are accounted separately.
-- A fixed commitment bond with funding at reveal is an MVP proposal, not complete collateralization during commit. Review selective non-reveal incentives before implementation. Bid-sized deposits during commit leak amounts; any alternative must document privacy/capital trade-offs.
+- Chunk 2 implements a fixed commitment bond with funding at reveal. This is not complete collateralization during commit: selective non-reveal remains possible at the cost of the bond. The trade-off is documented in docs/AUCTION.md. Bid-sized deposits during commit would leak amounts.
+- Chunk 2 fixes timestamp windows before commit and requires finalization before activation. Late finalization cancels the right and refunds revealed bids/bonds; non-reveal bonds are still forfeited. Timing and penalty rules must be visible in the UI.
 - Use pull withdrawals and bounded work per operation; no loop over every bidder for settlement.
 - Keep the deployer recipient fixed for each auction; no mid-auction recipient or fee changes.
 - Prevent router/hookData identity spoofing. Do not use tx.origin for authorization.
