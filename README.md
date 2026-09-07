@@ -4,7 +4,7 @@ ETHOnline 2026 Start Fresh prototype of the Protocol Fee Discount Auction descri
 
 ## Status
 
-Chunk 4 complete: the sealed auction, authenticated executor and surcharge hook work together against real v4 core locally. A local demo workstation now creates and recovers commit secrets, walks the auction lifecycle and compares the surcharge treatment. MockUSDC funds bids and the deploying wallet receives proceeds. No public deployment has occurred.
+Chunks 0–4 are complete. Chunk 5 deployment preflight is ready: the project now has a reproducible Unichain Sepolia deployment script that mines the v4 hook address and derives the proceeds recipient from the deployment signer. MockUSDC funds bids and the deploying wallet receives proceeds. No public deployment has occurred.
 
 ## Agreed scope
 
@@ -53,6 +53,10 @@ npm run build
 ```
 
 See [app/README.md](app/README.md) for the run instructions and boundary. The scenario model preserves the 25 bp LP fee and only removes the 5 bp application surcharge; it is an arithmetic comparison, not a swap quote.
+
+## Testnet deployment
+
+The reproducible Unichain Sepolia deployment path is in [script/DeployPFDA.s.sol](script/DeployPFDA.s.sol). It derives the auction proceeds recipient from the local deployment signer, mines a CREATE2 hook address with the exact v4 permission bits, and refuses any chain other than 1301. [docs/TESTNET.md](docs/TESTNET.md) contains the preflight, broadcast, verification and two-bidder rehearsal record. No addresses or transactions have been claimed yet.
 
 ## Sources
 

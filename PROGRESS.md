@@ -44,3 +44,10 @@
 - Added a deterministic fee comparison runner. It labels all values as a simplified simulation, preserves the 25 bp LP fee in both paths, and removes only the 5 bp application surcharge for the active winner. It excludes price impact, routing, gas, native protocol fees and token edge cases.
 - Added Vitest checks for secret domain binding/tamper detection and fee-model treatment. The app has no wallet connection, contract calls, testnet address, or claimed on-chain receipt yet; its placeholder addresses and receipts are local-only by design.
 - Verification: `npm run lint`, `npm run test` (3 tests), and `npm run build` all pass. `forge fmt --check`, `forge build`, and the complete Foundry regression suite all pass: 70 tests with no failures/skips, including the 128-run/64-depth auction invariants. Foundry still reports the known non-fatal sandbox cache warning. No GitHub remote is configured.
+
+## Chunk 5: Unichain Sepolia deployment preflight
+
+- Added `PFDAHookDeployer`, a CREATE2 factory that deploys `PFDAFeeHook` only when its low 14 address bits match the three permissions the hook implements: `beforeSwap`, `afterSwap`, and `beforeSwapReturnDelta`.
+- Added `script/DeployPFDA.s.sol`. It requires chain ID 1301, confirms the selected PoolManager has code, deploys MockUSDC/Auction/Executor/HookDeployer, mines the hook salt locally, and derives both the immutable auction proceeds recipient and hook recipient from `DEPLOYER_PRIVATE_KEY`.
+- Verified the current official Unichain Sepolia PoolManager at `0x00b036b58a818b1bc34d502d3fe730db729e62ac`: the RPC reports chain ID 1301 and the address has deployed code. The source and broadcast procedure are in docs/TESTNET.md.
+- Added tests for predicted CREATE2 deployment, exact permission bits, immutable wiring and invalid-salt rejection. Public deployment and two-bidder on-chain rehearsal are intentionally not claimed: this workspace has no `.env` or funded signer configured. The user must run the documented local broadcast command; no private key should be placed in chat.
