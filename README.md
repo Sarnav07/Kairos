@@ -40,6 +40,17 @@ forge test -vv
 
 See [PLAN.md](PLAN.md) for milestones and commit gates. See [FEEDBACK.md](FEEDBACK.md) for developer feedback collected during the build.
 
+## Code map for judges
+
+| What to verify | Contract / lines | Evidence |
+| --- | --- | --- |
+| Application surcharge and LP-fee preservation | [PFDAFeeHook: constructor and swap callbacks](src/PFDAFeeHook.sol#L38-L115) | [Fee accounting](docs/FEE_ACCOUNTING.md), [hook tests](test/PFDAFeeHook.t.sol) |
+| Sealed first-price auction, refunds and deployer proceeds | [PFDAAuction: scheduling through proceeds collection](src/PFDAAuction.sol#L111-L229) | [Auction rules](docs/AUCTION.md), [auction tests](test/PFDAAuction.t.sol) |
+| Winner authentication and transaction-scoped eligibility | [PFDAExecutor: swap and callback](src/PFDAExecutor.sol#L63-L134) | [Execution specification](docs/EXECUTION.md), [integration tests](test/PFDAIntegration.t.sol) |
+| Valid v4 hook deployment address | [PFDAHookDeployer: CREATE2 prediction and deployment](src/PFDAHookDeployer.sol#L18-L89) | [Deployment preflight tests](test/PFDAHookDeployer.t.sol), [testnet procedure](docs/TESTNET.md) |
+
+Known constraints are collected in [LIMITATIONS.md](docs/LIMITATIONS.md). The required submission checklist and judge path are in [SUBMISSION.md](docs/SUBMISSION.md).
+
 ## Local demo workstation
 
 The React/Vite app in [app/](app/) is a deliberately offline simulation until testnet addresses exist. It makes a domain-bound commit secret, exports/recover it as JSON, produces receipts labelled as local simulation, and models the difference between an ordinary caller and an active PFDA winner. It does **not** connect a wallet or claim that any action was broadcast.

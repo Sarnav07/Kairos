@@ -21,3 +21,8 @@ Record specific SDK/contracts versions, reproduction steps, errors, useful docum
 ## Submission
 
 Submit https://developers.uniswap.org/hackathon-feedback with the public URL of this file after the GitHub remote exists and the build feedback is complete.
+
+## Submission readiness
+
+- This file is present locally but has no public GitHub URL because the repository has no configured remote.
+- The feedback form has not been submitted. The user must complete that account-bound action after pushing the repository and verify the submitted form contains the resolving public URL of this file.

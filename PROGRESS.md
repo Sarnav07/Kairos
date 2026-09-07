@@ -51,3 +51,11 @@
 - Added `script/DeployPFDA.s.sol`. It requires chain ID 1301, confirms the selected PoolManager has code, deploys MockUSDC/Auction/Executor/HookDeployer, mines the hook salt locally, and derives both the immutable auction proceeds recipient and hook recipient from `DEPLOYER_PRIVATE_KEY`.
 - Verified the current official Unichain Sepolia PoolManager at `0x00b036b58a818b1bc34d502d3fe730db729e62ac`: the RPC reports chain ID 1301 and the address has deployed code. The source and broadcast procedure are in docs/TESTNET.md.
 - Added tests for predicted CREATE2 deployment, exact permission bits, immutable wiring and invalid-salt rejection. Public deployment and two-bidder on-chain rehearsal are intentionally not claimed: this workspace has no `.env` or funded signer configured. The user must run the documented local broadcast command; no private key should be placed in chat.
+
+## Chunk 6: submission package and regression gate
+
+- Added a judge-facing README code map with direct contract line anchors, an explicit limitations document, a three-minute demo recording script, and a submission checklist that separates local evidence from account-bound/public work still pending.
+- Extended GitHub Actions to verify the React demo (`npm ci`, lint, test and build) after the Foundry checks.
+- Added `tools/verify-clean-checkout.sh`, which clones the current repository with submodules into a temporary directory and runs both contract and frontend gates without mutating the working checkout.
+- `FEEDBACK.md` now records the actual submission state. No public remote, testnet evidence, demo video, or feedback-form submission is claimed. These remain explicit release blockers rather than substituted local assertions.
+- Fresh-checkout verification completed on 2026-09-08: recursive submodules initialized from pinned commits; Foundry formatting/build and all 72 tests passed; a clean `npm ci` then frontend lint, 3 tests and production build passed. The temporary checkout was removed after the run.
