@@ -37,4 +37,10 @@
 - Full regression: 70 tests pass, no failures/skips; compilation and formatting pass. Existing 128-run/64-depth auction invariants remain green.
 - Documented wiring, caller authentication, ordinary trader access, supported modes and limitations in docs/EXECUTION.md. No public testnet deployment or GitHub remote yet.
 
-Next: chunk 4, wallet UI and repeatable scenario runner, including commitment-secret recovery and transaction receipts.
+## Chunk 4: local demo workstation and scenario runner
+
+- Added a responsive React/Vite workstation in `app/` for the sealed first-price auction. The interface has an auction clock ribbon, bid preparation flow, lifecycle controls, a local receipt ledger and a deployment-boundary checklist.
+- Bid secrets use the same domain fields as `PFDAAuction.commitmentFor`: chain ID, auction address, auction ID, bidder, USDC amount and bytes32 salt. The UI exports a recovery JSON file, revalidates its commitment on import, and explains why it is necessary before a reveal.
+- Added a deterministic fee comparison runner. It labels all values as a simplified simulation, preserves the 25 bp LP fee in both paths, and removes only the 5 bp application surcharge for the active winner. It excludes price impact, routing, gas, native protocol fees and token edge cases.
+- Added Vitest checks for secret domain binding/tamper detection and fee-model treatment. The app has no wallet connection, contract calls, testnet address, or claimed on-chain receipt yet; its placeholder addresses and receipts are local-only by design.
+- Verification: `npm run lint`, `npm run test` (3 tests), and `npm run build` all pass. `forge fmt --check`, `forge build`, and the complete Foundry regression suite all pass: 70 tests with no failures/skips, including the 128-run/64-depth auction invariants. Foundry still reports the known non-fatal sandbox cache warning. No GitHub remote is configured.

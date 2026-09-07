@@ -4,7 +4,7 @@ ETHOnline 2026 Start Fresh prototype of the Protocol Fee Discount Auction descri
 
 ## Status
 
-Chunk 3 complete: the sealed auction, authenticated executor and surcharge hook work together against real v4 core locally. MockUSDC funds bids and the deploying wallet receives proceeds. The UI and public testnet deployment are next; no public deployment has occurred.
+Chunk 4 complete: the sealed auction, authenticated executor and surcharge hook work together against real v4 core locally. A local demo workstation now creates and recovers commit secrets, walks the auction lifecycle and compares the surcharge treatment. MockUSDC funds bids and the deploying wallet receives proceeds. No public deployment has occurred.
 
 ## Agreed scope
 
@@ -39,6 +39,20 @@ forge test -vv
 ```
 
 See [PLAN.md](PLAN.md) for milestones and commit gates. See [FEEDBACK.md](FEEDBACK.md) for developer feedback collected during the build.
+
+## Local demo workstation
+
+The React/Vite app in [app/](app/) is a deliberately offline simulation until testnet addresses exist. It makes a domain-bound commit secret, exports/recover it as JSON, produces receipts labelled as local simulation, and models the difference between an ordinary caller and an active PFDA winner. It does **not** connect a wallet or claim that any action was broadcast.
+
+```sh
+cd app
+npm install
+npm run lint
+npm run test
+npm run build
+```
+
+See [app/README.md](app/README.md) for the run instructions and boundary. The scenario model preserves the 25 bp LP fee and only removes the 5 bp application surcharge; it is an arithmetic comparison, not a swap quote.
 
 ## Sources
 

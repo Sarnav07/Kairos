@@ -5,6 +5,8 @@ out/
 cache/
 broadcast/
 node_modules/
+app/dist/
+*.tsbuildinfo
 .next/
 coverage/
 .DS_Store
