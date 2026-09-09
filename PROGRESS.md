@@ -88,3 +88,9 @@
 - Added a transaction-linked activity tape for auction lifecycle events, executor swaps and pool surcharge receipts. The RPC reader uses a bounded recent block window; no permanent indexer or unverified historical claim is implied.
 - Added a two-bidder rehearsal checklist derived solely from visible receipts: schedule, two commits, two reveals, finalization/refund/proceeds, plus discounted and ordinary executor swaps.
 - Added deterministic dashboard tests for phase deadlines, countdowns and evidence gating, bringing the frontend suite to 14 tests. No live auction or rehearsal transaction was created during this chunk.
+
+## Chunk 12: submission evidence update
+
+- Added a canonical [public evidence register](docs/EVIDENCE.md) with the deployed Unichain Sepolia stack, pool bootstrap receipts, repository and public feedback-file links. It separates those verified links from the intentionally pending auction rehearsal, video and account-bound feedback form.
+- Added `tools/verify-submission-evidence.sh`, which checks the evidence manifest invariants, configured GitHub remote, public feedback URL and each currently listed public receipt. It fails if a pending item is silently represented as complete.
+- Corrected the stale feedback-file remote statement and updated the judge path and release gate. The script does not submit forms or create transactions; unresolved rehearsal, video and feedback-form evidence remains plainly pending.

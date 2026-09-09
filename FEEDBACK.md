@@ -20,9 +20,11 @@ Record specific SDK/contracts versions, reproduction steps, errors, useful docum
 
 ## Submission
 
-Submit https://developers.uniswap.org/hackathon-feedback with the public URL of this file after the GitHub remote exists and the build feedback is complete.
+Public file: https://github.com/Sarnav07/Kairos/blob/main/FEEDBACK.md
+
+Submit https://developers.uniswap.org/hackathon-feedback with that public URL after the build feedback is complete.
 
 ## Submission readiness
 
-- This file is present locally but has no public GitHub URL because the repository has no configured remote.
-- The feedback form has not been submitted. The user must complete that account-bound action after pushing the repository and verify the submitted form contains the resolving public URL of this file.
+- The public GitHub repository and this file's public URL have been verified. The feedback form has not been submitted.
+- The user must complete that account-bound action and verify the submitted form contains the resolving public URL above.

@@ -4,7 +4,7 @@ ETHOnline 2026 Start Fresh prototype of the Protocol Fee Discount Auction descri
 
 ## Status
 
-Chunks 0–11 are complete. The PFDA contracts and a hook-enabled KRA/KRB demonstration pool are deployed and independently verified on Unichain Sepolia. The workstation connects to Unichain Sepolia wallets, verifies live wiring, supplies bidder approval/commit/reveal/refund controls, and keeps bid recovery records encrypted locally. The immutable deploying wallet alone can schedule a fixed auction or collect proceeds. A read-only dashboard shows live phase/countdowns, state, event receipts and a two-bidder rehearsal checklist. No live auction has been scheduled yet; the remaining demo work is recording that rehearsal and its evidence.
+Chunks 0–12 are complete. The PFDA contracts and a hook-enabled KRA/KRB demonstration pool are deployed and independently verified on Unichain Sepolia. The workstation connects to Unichain Sepolia wallets, verifies live wiring, supplies bidder approval/commit/reveal/refund controls, and keeps bid recovery records encrypted locally. The immutable deploying wallet alone can schedule a fixed auction or collect proceeds. A read-only dashboard shows live phase/countdowns, state, event receipts and a two-bidder rehearsal checklist. The public infrastructure evidence register now verifies the repository and deployed receipts; the remaining external work is the real auction rehearsal, its recording, and the account-bound feedback submission.
 
 ## Agreed scope
 
@@ -49,7 +49,7 @@ See [PLAN.md](PLAN.md) for milestones and commit gates. See [FEEDBACK.md](FEEDBA
 | Winner authentication and transaction-scoped eligibility | [PFDAExecutor: swap and callback](src/PFDAExecutor.sol#L63-L134) | [Execution specification](docs/EXECUTION.md), [integration tests](test/PFDAIntegration.t.sol) |
 | Valid v4 hook deployment address | [PFDAHookDeployer: CREATE2 prediction and deployment](src/PFDAHookDeployer.sol#L18-L89) | [Deployment preflight tests](test/PFDAHookDeployer.t.sol), [testnet procedure](docs/TESTNET.md) |
 
-Known constraints are collected in [LIMITATIONS.md](docs/LIMITATIONS.md). The required submission checklist and judge path are in [SUBMISSION.md](docs/SUBMISSION.md).
+Known constraints are collected in [LIMITATIONS.md](docs/LIMITATIONS.md). The required submission checklist and judge path are in [SUBMISSION.md](docs/SUBMISSION.md). Public deployment receipts and the honest outstanding-evidence list are in [EVIDENCE.md](docs/EVIDENCE.md).
 
 ## Local demo workstation
 
@@ -75,4 +75,4 @@ The reproducible Unichain Sepolia deployment path is in [script/DeployPFDA.s.sol
 - [Official v4 deployment addresses](https://developers.uniswap.org/docs/protocols/v4/deployments)
 - Supplied paper: *The Protocol Fee Discount Auction*, October 2025. Section 2 defines the mechanism; Section 4's economic results are model predictions, not guarantees for this prototype.
 
-Before submission, finish the auction and swap evidence, demo recording, and feedback-form status.
+Before submission, run `bash tools/verify-submission-evidence.sh`, then finish the auction and swap evidence, demo recording, and feedback-form status.

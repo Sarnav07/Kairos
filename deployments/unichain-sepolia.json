@@ -40,6 +40,22 @@
     "hookRecipientMatchesDeployer": true,
     "hookSurchargePpm": 500
   },
+  "submissionEvidence": {
+    "repository": "https://github.com/Sarnav07/Kairos",
+    "feedbackFile": "https://github.com/Sarnav07/Kairos/blob/main/FEEDBACK.md",
+    "twoBidderRehearsal": {
+      "status": "pending",
+      "reason": "No auction has been scheduled on-chain; do not add placeholder transaction hashes."
+    },
+    "demoVideo": {
+      "status": "pending",
+      "reason": "Record only after the two-bidder rehearsal is complete."
+    },
+    "feedbackForm": {
+      "status": "pendingUserAction",
+      "reason": "The user must submit the account-bound form after opening the public FEEDBACK.md URL."
+    }
+  },
   "poolBootstrap": {
     "blockNumber": 62101827,
     "poolId": "0x34626ba06dcca06958a701102c32034d3e0f035d9ea1629ec803e3cc8a093d4d",
