@@ -4,7 +4,7 @@ ETHOnline 2026 Start Fresh prototype of the Protocol Fee Discount Auction descri
 
 ## Status
 
-Chunks 0–4 are complete. Chunk 5 deployment preflight is ready: the project now has a reproducible Unichain Sepolia deployment script that mines the v4 hook address and derives the proceeds recipient from the deployment signer. MockUSDC funds bids and the deploying wallet receives proceeds. No public deployment has occurred.
+Chunks 0–5 are complete. The PFDA contracts are deployed and independently verified on Unichain Sepolia. MockUSDC funds bids and the deploying wallet receives proceeds. The remaining live-demo work is pool bootstrapping, auction scheduling and the two-bidder rehearsal.
 
 ## Agreed scope
 
@@ -53,7 +53,7 @@ Known constraints are collected in [LIMITATIONS.md](docs/LIMITATIONS.md). The re
 
 ## Local demo workstation
 
-The React/Vite app in [app/](app/) is a deliberately offline simulation until testnet addresses exist. It makes a domain-bound commit secret, exports/recover it as JSON, produces receipts labelled as local simulation, and models the difference between an ordinary caller and an active PFDA winner. It does **not** connect a wallet or claim that any action was broadcast.
+The React/Vite app in [app/](app/) currently remains an offline simulation. It makes a domain-bound commit secret, exports/recover it as JSON, produces receipts labelled as local simulation, and models the difference between an ordinary caller and an active PFDA winner. The contracts now have testnet addresses, but wallet integration and live transaction handling are the next chunk.
 
 ```sh
 cd app
@@ -67,7 +67,7 @@ See [app/README.md](app/README.md) for the run instructions and boundary. The sc
 
 ## Testnet deployment
 
-The reproducible Unichain Sepolia deployment path is in [script/DeployPFDA.s.sol](script/DeployPFDA.s.sol). It derives the auction proceeds recipient from the local deployment signer, mines a CREATE2 hook address with the exact v4 permission bits, and refuses any chain other than 1301. [docs/TESTNET.md](docs/TESTNET.md) contains the preflight, broadcast, verification and two-bidder rehearsal record. No addresses or transactions have been claimed yet.
+The reproducible Unichain Sepolia deployment path is in [script/DeployPFDA.s.sol](script/DeployPFDA.s.sol). It derives the auction proceeds recipient from the local deployment signer, mines a CREATE2 hook address with the exact v4 permission bits, and refuses any chain other than 1301. The live contract addresses, transaction hashes, and immutable-wiring verification are in [deployments/unichain-sepolia.json](deployments/unichain-sepolia.json). [docs/TESTNET.md](docs/TESTNET.md) contains the broadcast procedure and remaining two-bidder rehearsal record.
 
 ## Sources
 
@@ -75,4 +75,4 @@ The reproducible Unichain Sepolia deployment path is in [script/DeployPFDA.s.sol
 - [Official v4 deployment addresses](https://developers.uniswap.org/docs/protocols/v4/deployments)
 - Supplied paper: *The Protocol Fee Discount Auction*, October 2025. Section 2 defines the mechanism; Section 4's economic results are model predictions, not guarantees for this prototype.
 
-Before submission, add deployment addresses, transaction evidence, exact contract/code permalinks, demo instructions, limitations, and the completed feedback-form status.
+Before submission, finish the public pool bootstrap, auction and swap evidence, wallet demo, exact contract/code permalinks, demo recording, and feedback-form status.

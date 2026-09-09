@@ -1,0 +1,43 @@
+{
+  "network": "Unichain Sepolia",
+  "chainId": 1301,
+  "blockNumber": 62101285,
+  "deployedAt": "2026-09-09",
+  "deployerAndProceedsRecipient": "0x54560095593B57Ad71572336037435Ff1E50E4EA",
+  "poolManager": "0x00B036B58a818b1bc34d502d3fe730db729e62ac",
+  "surchargePpm": 500,
+  "hookSalt": "0x00000000000000000000000000000000000000000000000000000000000006cd",
+  "contracts": {
+    "mockUSDC": {
+      "address": "0x7eef5a9C4289ECC5C53E2a35fac7D2Fb770048cd",
+      "deploymentTransaction": "0x461c21c8aec5db56090fd88d604c06b9fc4fbaf0fa1e41948702dd110cbf57a5"
+    },
+    "pfdaAuction": {
+      "address": "0xE30bd1162A9BB02C32EC8a0731014d45e1C15B73",
+      "deploymentTransaction": "0x55377286f6f02e3700f3fb7aab59b9fddb9874bb8c601882edbefacb4ae98aa4"
+    },
+    "pfdaExecutor": {
+      "address": "0x479E644B05876C6AD98cE59C2Fc94FB6C0E6b231",
+      "deploymentTransaction": "0xb03867062d0fe03e36c8259890fe2473ca8cfd38b053f02facbe492c6119895f"
+    },
+    "pfdaHookDeployer": {
+      "address": "0x27cb69EE6b4e50Ef0b26FCEb5663E611F44b0B9C",
+      "deploymentTransaction": "0x72dcdcd298e527994d33f70b62d3dbcbfa12e8a6a314c3b67321b98092b5e5b7"
+    },
+    "pfdaFeeHook": {
+      "address": "0xBeE0b2606fdb9b70Ca3FB24254B674423f1e40c8",
+      "deploymentTransaction": "0x36c7162a5652776509e28247a1579dab667d9c109d2db81c93c3e150c223c0bf"
+    }
+  },
+  "verification": {
+    "bytecodePresent": true,
+    "auctionDeployerMatchesRecipient": true,
+    "auctionBidTokenMatchesMockUSDC": true,
+    "executorManagerMatchesPoolManager": true,
+    "executorAuctionMatchesPFDAAuction": true,
+    "hookManagerMatchesPoolManager": true,
+    "hookEligibilityMatchesPFDAExecutor": true,
+    "hookRecipientMatchesDeployer": true,
+    "hookSurchargePpm": 500
+  }
+}

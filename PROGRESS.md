@@ -52,6 +52,7 @@
 - Verified the current official Unichain Sepolia PoolManager at `0x00b036b58a818b1bc34d502d3fe730db729e62ac`: the RPC reports chain ID 1301 and the address has deployed code. The source and broadcast procedure are in docs/TESTNET.md.
 - Added tests for predicted CREATE2 deployment, exact permission bits, immutable wiring and invalid-salt rejection. Public deployment and two-bidder on-chain rehearsal are intentionally not claimed: this workspace has no `.env` or funded signer configured. The user must run the documented local broadcast command; no private key should be placed in chat.
 - Deployment signer configured by user as `0x54560095593B57Ad71572336037435Ff1E50E4EA`. The script now verifies the locally supplied key derives to this public address before broadcasting, ensuring it is also the immutable auction-proceeds and hook-surcharge recipient.
+- Broadcast and independently verified on Unichain Sepolia on 2026-09-09 in block `62101285`. The complete public address and transaction record is committed in `deployments/unichain-sepolia.json`; all five deployment transactions have successful receipts and non-empty bytecode. RPC calls confirmed the auction token and proceeds recipient plus the executor/hook manager, auction, eligibility, recipient and 500-PPM surcharge wiring.
 
 ## Chunk 6: submission package and regression gate
 
