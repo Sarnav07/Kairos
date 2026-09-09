@@ -22,6 +22,7 @@ contract DeployPFDA is Script {
     error UnsupportedChain(uint256 actual);
     error InvalidManager(address manager);
     error InvalidSurcharge(uint256 surchargePpm);
+    error UnexpectedDeployer(address actual, address expected);
     error SaltNotFound();
 
     struct Deployment {
@@ -41,6 +42,8 @@ contract DeployPFDA is Script {
 
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerKey);
+        address expectedDeployer = vm.envAddress("DEPLOYER_ADDRESS");
+        if (deployer != expectedDeployer) revert UnexpectedDeployer(deployer, expectedDeployer);
         address managerAddress = vm.envOr("POOL_MANAGER", UNICHAIN_SEPOLIA_POOL_MANAGER);
         uint256 configuredSurcharge = vm.envOr("SURCHARGE_PPM", uint256(DEFAULT_SURCHARGE_PPM));
         if (managerAddress.code.length == 0) revert InvalidManager(managerAddress);
@@ -48,22 +51,22 @@ contract DeployPFDA is Script {
 
         // forge-lint: disable-next-line(unsafe-typecast)
         uint24 surchargePpm = uint24(configuredSurcharge);
+        deployed = _deployBase(deployerKey, deployer, managerAddress, surchargePpm);
+        _deployHook(deployerKey, deployed);
+        _logDeployment(deployed);
+    }
+
+    function _deployBase(
+        uint256 deployerKey,
+        address deployer,
+        address managerAddress,
+        uint24 surchargePpm
+    ) internal returns (Deployment memory deployed) {
         vm.startBroadcast(deployerKey);
         MockUSDC bidToken = new MockUSDC();
         PFDAAuction auction = new PFDAAuction(bidToken, DEFAULT_ACTIVATION_DELAY);
         PFDAExecutor executor = new PFDAExecutor(IPoolManager(managerAddress), auction);
         PFDAHookDeployer hookDeployer = new PFDAHookDeployer();
-        vm.stopBroadcast();
-
-        bytes32 initCodeHash = hookDeployer.initCodeHash(
-            IPoolManager(managerAddress), executor, deployer, surchargePpm
-        );
-        bytes32 salt = _mineHookSalt(hookDeployer, initCodeHash);
-
-        vm.startBroadcast(deployerKey);
-        PFDAFeeHook hook = hookDeployer.deploy(
-            salt, IPoolManager(managerAddress), executor, deployer, surchargePpm
-        );
         vm.stopBroadcast();
 
         deployed = Deployment({
@@ -73,11 +76,32 @@ contract DeployPFDA is Script {
             auction: address(auction),
             executor: address(executor),
             hookDeployer: address(hookDeployer),
-            hook: address(hook),
-            hookSalt: salt,
+            hook: address(0),
+            hookSalt: bytes32(0),
             surchargePpm: surchargePpm
         });
-        _logDeployment(deployed);
+    }
+
+    function _deployHook(uint256 deployerKey, Deployment memory deployed) internal {
+        PFDAHookDeployer hookDeployer = PFDAHookDeployer(deployed.hookDeployer);
+        bytes32 initCodeHash = hookDeployer.initCodeHash(
+            IPoolManager(deployed.poolManager),
+            PFDAExecutor(deployed.executor),
+            deployed.deployer,
+            deployed.surchargePpm
+        );
+        bytes32 salt = _mineHookSalt(hookDeployer, initCodeHash);
+        vm.startBroadcast(deployerKey);
+        PFDAFeeHook hook = hookDeployer.deploy(
+            salt,
+            IPoolManager(deployed.poolManager),
+            PFDAExecutor(deployed.executor),
+            deployed.deployer,
+            deployed.surchargePpm
+        );
+        vm.stopBroadcast();
+        deployed.hook = address(hook);
+        deployed.hookSalt = salt;
     }
 
     function _mineHookSalt(PFDAHookDeployer hookDeployer, bytes32 initCodeHash)

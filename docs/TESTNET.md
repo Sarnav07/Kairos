@@ -13,7 +13,7 @@ The PoolManager address comes from Uniswap’s current [v4 deployment directory]
 ## Before broadcasting
 
 1. Fund the wallet that will deploy the contracts with Unichain Sepolia test ETH.
-2. Copy `.env.example` to `.env` and set `DEPLOYER_PRIVATE_KEY` locally. Never commit or send it in chat.
+2. Copy `.env.example` to `.env` and set `DEPLOYER_PRIVATE_KEY` locally. Never commit or send it in chat. It must derive to `DEPLOYER_ADDRESS` (`0x54560095593B57Ad71572336037435Ff1E50E4EA`); the deployment script rejects any other signer.
 3. Keep `POOL_MANAGER` at the official address unless a deliberate test deployment is being used.
 4. Run the full local gates:
 
@@ -35,7 +35,7 @@ forge script script/DeployPFDA.s.sol:DeployPFDA \
   -vvvv
 ```
 
-`DeployPFDA` derives the immutable auction proceeds recipient from `DEPLOYER_PRIVATE_KEY`; no recipient override is accepted. It deploys MockUSDC, PFDAAuction, PFDAExecutor and PFDAHookDeployer, then mines a local CREATE2 salt and deploys PFDAFeeHook with the three required v4 permission bits: `beforeSwap`, `afterSwap`, and `beforeSwapReturnDelta`.
+`DeployPFDA` derives the immutable auction proceeds recipient from `DEPLOYER_PRIVATE_KEY` and verifies it matches the configured public `DEPLOYER_ADDRESS`; no recipient override is accepted. It deploys MockUSDC, PFDAAuction, PFDAExecutor and PFDAHookDeployer, then mines a local CREATE2 salt and deploys PFDAFeeHook with the three required v4 permission bits: `beforeSwap`, `afterSwap`, and `beforeSwapReturnDelta`.
 
 After broadcast, use `cast code`, `cast call`, and explorer pages to confirm each address. Save the resulting addresses and transaction hashes in a new, truthful `deployments/unichain-sepolia.json` only after verification.
 
