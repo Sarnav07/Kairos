@@ -16,14 +16,14 @@ The prototype does not claim to waive native Uniswap protocol fees, all swap fee
 
 ## ETHGlobal / Uniswap Foundation release gate
 
-| Requirement | Status on 2026-09-08 | Evidence or required action |
+| Requirement | Status on 2026-09-09 | Evidence or required action |
 | --- | --- | --- |
 | Start Fresh project | Ready locally | Repository history starts with the project scaffold and records every implementation chunk. |
 | Public open-source GitHub repository | Ready | [Sarnav07/Kairos](https://github.com/Sarnav07/Kairos) contains the full commit history and source. |
 | `FEEDBACK.md` in the public repository | Ready locally | [FEEDBACK.md](../FEEDBACK.md) contains actual implementation observations. |
 | Feedback form submitted with public `FEEDBACK.md` link | Pending user account action | Submit [Uniswap Developer Feedback Form](https://developers.uniswap.org/hackathon-feedback) after the remote exists. |
 | README links to relevant contracts and lines | Ready locally | See the code map in [README](../README.md). |
-| Demonstrable application | Ready | React workstation with Unichain Sepolia read-only runtime, 8 frontend tests and 74 passing Solidity tests. |
+| Demonstrable application | Ready; rehearsal pending | React workstation with live wallet-confirmed bidder and immutable-deployer controls, encrypted local bid vault, 12 frontend tests and 74 passing Solidity tests. |
 | Verified testnet contract and pool addresses | Ready; auction rehearsal pending | See [deployment manifest](../deployments/unichain-sepolia.json) and [TESTNET.md](TESTNET.md). |
 | Demo video | Pending recording | Record the script in [DEMO.md](DEMO.md) and publish its URL in the project showcase. |
 

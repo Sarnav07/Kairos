@@ -1,6 +1,6 @@
 # PFDA demo workstation
 
-This is the PFDA product workstation. It combines a Unichain Sepolia read-only runtime with a deliberately separate local auction simulator.
+This is the PFDA product workstation. It combines a Unichain Sepolia wallet runtime with a deliberately separate local auction simulator.
 
 It demonstrates:
 
@@ -9,6 +9,9 @@ It demonstrates:
 - a deterministic comparison of an ordinary caller and active winner, with the LP fee retained and only the app surcharge waived.
 - injected-wallet detection and a Unichain Sepolia network guard;
 - a public contract registry, read-only immutable-wiring check, and Uniscan address links for the deployed stack.
+- wallet-confirmed exact-amount MockUSDC approval, commit, reveal and refund actions;
+- AES-GCM/PBKDF2 encrypted bid-secret records in local browser storage; and
+- an immutable-deployer-gated schedule/proceeds panel with fixed pool configuration.
 
 ## Run locally
 
@@ -28,4 +31,4 @@ npm run build
 
 ## Important boundary
 
-The lifecycle receipt ledger is a simulator, not a transaction explorer, and the fee comparison is not a price or execution quote. The runtime does not request an approval or submit a contract transaction in this chunk. The next bidder-flow chunk adds allowance, commit, reveal and refund actions with explicit wallet confirmations.
+The lifecycle receipt ledger is a simulator, not a transaction explorer, and the fee comparison is not a price or execution quote. A live-write button always requires the user’s connected wallet confirmation; the app does not hold a wallet key. Vault passwords are never stored, and a forgotten password cannot be recovered. No auction is created unless the verified immutable deployer explicitly confirms the schedule transaction.

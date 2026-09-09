@@ -74,3 +74,10 @@
 - Added a typed Unichain Sepolia registry with the verified deployed contracts, pool ID, explorer routes, an injected EIP-1193 wallet adapter, chain guard and switch request, and a viem read-only client.
 - The workstation now shows disconnected, unavailable, wrong-network and connected wallet states. It verifies the auction → executor → hook immutable wiring live and displays the verification block plus explorer links. It does not create approvals or submit any auction transaction.
 - Added frontend tests for the verified registry, explorer routes, chain parsing/guard, wallet hydration and the exact `wallet_switchEthereumChain` request. `npm run lint`, 8 Vitest tests and the production build pass; browser checks confirmed the responsive desktop/mobile runtime. The full Solidity suite remains green with 74 tests.
+
+## Chunks 9–10: encrypted bidder flow and deployer controls
+
+- Added a user-confirmed Unichain Sepolia write client for exact MockUSDC approvals, commitment, reveal, refund and proceeds collection. The UI preflights the connected wallet's balance, allowance, phase and configured auction before opening a wallet confirmation.
+- Added a browser-only AES-256-GCM/PBKDF2 secret vault. Records bind their ciphertext to the existing domain-bound secret, require a 12-character password, keep that password out of storage, and reject a decrypted secret for a different connected wallet.
+- Added a separate immutable-deployer-gated operator panel. It fixes the deployed KRA/KRB pool, validates positive whole-minute windows and enforces at least a 30-minute post-reveal activation delay before a wallet can create an auction. It also exposes proceeds collection.
+- Added 4 focused frontend tests for encrypted vault recovery/tamper isolation and schedule/USDC validation, bringing the frontend suite to 12 tests. No live auction was created during implementation; every state-changing path remains a button click plus wallet confirmation.

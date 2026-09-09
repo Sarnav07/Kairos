@@ -70,6 +70,42 @@ h1 span { color: #e75d42; }
 .runtime-actions { display: grid; align-content: center; gap: 8px; background: #e3eef8; }
 .runtime-actions .text-button { width: max-content; max-width: 100%; text-decoration: none; }
 
+.live-control-grid { display: grid; grid-template-columns: minmax(0, 1.32fr) minmax(330px, .86fr); gap: 18px; padding: 38px 0 18px; }
+.live-panel { border: 1px solid #a5bdd2; box-shadow: 8px 8px 0 rgba(7,27,51,.1); }
+.bidder-panel { padding: 31px; background: #f4f8fc; }
+.operator-panel { padding: 31px; background: #f1e4a8; border-color: #c8ad4d; }
+.live-panel h2 { margin: 31px 0 11px; font-size: 36px; }
+.live-tag, .operator-tag { padding: 5px 7px; color: #30627f; border: 1px solid #9db6cf; background: #e5f0f9; font: 800 9px/1 "SFMono-Regular", Consolas, monospace; letter-spacing: .08em; }
+.operator-tag { color: #756000; border-color: #c4a83c; background: #fff0ab; }
+.operator-tag.ready { color: #0d6b50; border-color: #5baa90; background: #d6efe2; }
+.auction-load-row { display: grid; grid-template-columns: minmax(100px, .55fr) auto; gap: 10px; align-items: end; margin: 25px 0 13px; }
+.auction-load-row label, .vault-box label, .operator-money label, .schedule-fields label { display: grid; gap: 6px; color: #4f6c86; font-size: 11px; font-weight: 800; }
+.auction-load-row input, .vault-box input, .operator-money input, .schedule-fields input { min-width: 0; width: 100%; padding: 9px 10px; border: 1px solid #9db6cf; border-radius: 0; outline: 0; background: rgba(255,255,255,.6); color: #092443; font: 700 13px/1 "SFMono-Regular", Consolas, monospace; }
+.auction-load-row input:focus, .vault-box input:focus, .operator-money input:focus, .schedule-fields input:focus { border-color: #e75d42; }
+.preflight-grid { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid #aac0d4; background: #e4eff8; }
+.preflight-grid span { min-width: 0; padding: 11px 9px; border-right: 1px solid #b6c9da; color: #24445f; overflow-wrap: anywhere; font: 800 10px/1.35 "SFMono-Regular", Consolas, monospace; }
+.preflight-grid span:last-child { border-right: 0; }
+.preflight-grid b { display: block; margin-bottom: 5px; color: #5d7790; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
+.empty-live { margin: 14px 0; padding: 10px 12px; border-left: 3px solid #ffdb55; background: #e8f1f9; color: #58758f; font-size: 12px; }
+.live-secret-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin: 16px 0; color: #52718a; font: 800 10px/1.35 "SFMono-Regular", Consolas, monospace; }
+.vault-box { display: grid; grid-template-columns: .8fr 1.1fr; gap: 15px; padding: 17px; border: 1px dashed #8ba8c2; background: #e7f0f9; }
+.vault-box strong { display: block; color: #193c59; font: 700 19px/1.08 Georgia, serif; }
+.vault-actions { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr auto; gap: 8px; }
+.vault-actions select { min-width: 0; padding: 8px; border: 1px solid #9db6cf; border-radius: 0; background: #f8fbfe; color: #264863; font-size: 11px; }
+.write-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 17px; }
+.write-row .button { flex: 1 1 112px; }
+.schedule-fields { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 24px 0 12px; }
+.schedule-fields label:last-child { grid-column: 1 / -1; }
+.schedule-fields label, .operator-money label { color: #655c31; }
+.schedule-fields input, .operator-money input { border-color: #c5ac51; background: rgba(255,250,220,.68); }
+.operator-money { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.operator-pool, .operator-lock { margin: 15px 0; color: #705f20; font-size: 11px; line-height: 1.45; }
+.operator-pool code { color: #4e481f; font-size: 10px; }
+.operator-actions { display: grid; grid-template-columns: 1.2fr 1fr; gap: 9px; }
+.operator-lock { margin-bottom: 0; padding: 9px 10px; border-left: 3px solid #d3a52d; background: rgba(255,249,210,.55); }
+.transaction-strip { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 18px; padding: 15px 18px; border: 1px solid #9db6cf; background: #cddff0; }
+.transaction-strip strong { display: block; color: #294c69; font-size: 12px; line-height: 1.45; }
+
 .work-grid { display: grid; grid-template-columns: minmax(0, 1.34fr) minmax(330px, .8fr); gap: 18px; padding: 40px 0 78px; }
 .ticket-panel, .command-panel, .receipt-panel { border: 1px solid #a5bdd2; box-shadow: 8px 8px 0 rgba(7,27,51,.1); }
 .ticket-panel { padding: 35px; background: #f4f8fc; }
@@ -181,12 +217,14 @@ footer { display: flex; justify-content: space-between; padding: 17px 0 29px; co
   .runtime-rail { grid-template-columns: 1fr 1fr; }
   .runtime-rail > *:nth-child(2) { border-right: 0; }
   .runtime-rail > *:nth-child(-n+2) { border-bottom: 1px solid #a8bed2; }
-  .work-grid, .comparison { grid-template-columns: 1fr; }
+  .work-grid, .comparison, .live-control-grid { grid-template-columns: 1fr; }
   .work-grid { padding: 28px 0 55px; }
   .waiver-arrow { justify-self: center; width: 190px; margin: -2px 0; }
   .model-controls, .deployment-section { display: grid; grid-template-columns: 1fr; align-items: start; }
   .model-rates { flex-wrap: wrap; }
   .wiring-checklist { grid-template-columns: 1fr 1fr; }
+  .preflight-grid { grid-template-columns: repeat(3, 1fr); }
+  .preflight-grid span:nth-child(3) { border-right: 0; }
 }
 
 @media (max-width: 500px) {
@@ -203,6 +241,15 @@ footer { display: flex; justify-content: space-between; padding: 17px 0 29px; co
   .status-strip { gap: 16px 10px; }
   .status-strip strong { font-size: 11px; }
   .command-panel, .receipt-panel { padding: 22px 18px; }
+  .bidder-panel, .operator-panel { padding: 24px 19px; }
+  .auction-load-row, .vault-box, .operator-money { grid-template-columns: 1fr; }
+  .vault-actions { grid-template-columns: 1fr; }
+  .schedule-fields { grid-template-columns: 1fr; }
+  .schedule-fields label:last-child { grid-column: auto; }
+  .preflight-grid { grid-template-columns: 1fr 1fr; }
+  .preflight-grid span { border-bottom: 1px solid #b6c9da; }
+  .preflight-grid span:nth-last-child(-n+2) { border-bottom: 0; }
+  .transaction-strip { display: grid; }
   .fee-card { padding: 22px 18px; }
   .deployment-section { padding: 24px 19px; }
   .runtime-rail { grid-template-columns: 1fr; }

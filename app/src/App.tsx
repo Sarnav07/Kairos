@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import type { Address } from 'viem'
+import { formatUnits, type Address, type Hex } from 'viem'
 import {
   createBidSecret,
   DEMO_AUCTION_ADDRESS,
@@ -12,10 +12,32 @@ import {
   simulateTrade,
 } from './lib/domain'
 import {
+  addressesMatch,
+  approveBidToken,
+  collectProceeds,
+  commitBid,
+  createAuction,
+  readBidPreflight,
+  readNextAuctionId,
+  revealBid,
+  withdrawRefund,
+  type BidPreflight,
+} from './lib/contracts'
+import { buildSchedule, parseUsdc, requiredAllowance, type OperatorDurations } from './lib/auction'
+import {
+  decryptBidSecret,
+  encryptBidSecret,
+  listVaultRecords,
+  saveVaultRecord,
+  type EncryptedBidSecret,
+} from './lib/vault'
+import {
+  explorerTransaction,
   getInjectedProvider,
   getWalletSnapshot,
   isUnichainSepolia,
   liveContracts,
+  publicClient,
   readProtocolSnapshot,
   shortAddress,
   switchToUnichainSepolia,
@@ -42,6 +64,8 @@ type ProtocolState = {
   status: 'loading' | 'ready' | 'error'
   snapshot: ProtocolSnapshot | null
 }
+
+type TransactionState = { label: string; hash: Hex } | null
 
 const phases: { name: Phase; description: string }[] = [
   { name: 'Schedule', description: 'Terms fixed' },
@@ -70,6 +94,22 @@ function App() {
   const [showLiveConfig, setShowLiveConfig] = useState(false)
   const [wallet, setWallet] = useState<WalletState>({ status: 'checking', address: null, chainId: null })
   const [protocol, setProtocol] = useState<ProtocolState>({ status: 'loading', snapshot: null })
+  const [liveAuctionId, setLiveAuctionId] = useState('1')
+  const [bidPreflight, setBidPreflight] = useState<BidPreflight | null>(null)
+  const [liveSecret, setLiveSecret] = useState<BidSecret | null>(null)
+  const [vaultPassword, setVaultPassword] = useState('')
+  const [vaultRecords, setVaultRecords] = useState<EncryptedBidSecret[]>(() => (
+    typeof localStorage === 'undefined' ? [] : listVaultRecords(localStorage)
+  ))
+  const [selectedVaultCommitment, setSelectedVaultCommitment] = useState('')
+  const [liveNotice, setLiveNotice] = useState('Connect a Unichain Sepolia wallet, then load a scheduled auction.')
+  const [transaction, setTransaction] = useState<TransactionState>(null)
+  const [operatorDurations, setOperatorDurations] = useState<OperatorDurations>({
+    commitDelayMinutes: 5, commitDurationMinutes: 20, revealDurationMinutes: 20,
+    activationDelayMinutes: 35, rightDurationMinutes: 30,
+  })
+  const [operatorBond, setOperatorBond] = useState('1')
+  const [operatorMinimumBid, setOperatorMinimumBid] = useState('10')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const ordinary = useMemo(
@@ -86,6 +126,9 @@ function App() {
     void refreshProtocol()
     void refreshWallet()
   }, [])
+
+  const connectedAddress = wallet.status === 'connected' ? wallet.address : null
+  const isOperator = protocol.snapshot !== null && addressesMatch(connectedAddress, protocol.snapshot.auctionDeployer)
 
   async function refreshProtocol() {
     setProtocol((current) => ({ ...current, status: 'loading' }))
@@ -134,19 +177,163 @@ function App() {
       })
       return
     }
-    await refreshWallet(true)
-    const snapshot = await getWalletSnapshot(provider)
-    if (snapshot.address && !isUnichainSepolia(snapshot.chainId)) {
-      try {
+    try {
+      await refreshWallet(true)
+      const snapshot = await getWalletSnapshot(provider)
+      if (snapshot.address && !isUnichainSepolia(snapshot.chainId)) {
         await switchToUnichainSepolia(provider)
         await refreshWallet()
-      } catch {
-        setWallet({
-          status: 'wrong-network',
-          ...snapshot,
-          message: 'Switch this wallet to Unichain Sepolia (chain 1301) to use live mode.',
-        })
       }
+    } catch {
+      setWallet({
+        status: 'wrong-network', address: null, chainId: null,
+        message: 'Switch this wallet to Unichain Sepolia (chain 1301) to use live mode.',
+      })
+    }
+  }
+
+  async function loadBidPreflight() {
+    if (!connectedAddress) {
+      setLiveNotice('Connect a wallet on Unichain Sepolia before loading auction preflight data.')
+      return
+    }
+    try {
+      const next = await readBidPreflight(BigInt(liveAuctionId), connectedAddress)
+      setBidPreflight(next)
+      setLiveNotice(`Auction #${liveAuctionId} loaded. ${phaseLabel(next.phase)} is the current on-chain phase.`)
+    } catch {
+      setBidPreflight(null)
+      setLiveNotice(`Auction #${liveAuctionId} is not available yet. The deployer must schedule it first.`)
+    }
+  }
+
+  async function prepareLiveSecret() {
+    if (!connectedAddress || !bidPreflight) {
+      setLiveNotice('Load a scheduled auction from a connected wallet before creating its secret.')
+      return
+    }
+    try {
+      const bid = parseUsdc(bidUsdc)
+      if (bid < bidPreflight.auction.minimumBid) throw new Error('Bid is below this auction’s minimum.')
+      const next = createBidSecret({
+        chainId: 1301, auctionAddress: liveContracts.auction, auctionId: liveAuctionId,
+        bidder: connectedAddress, bidUsdc: normalizedBid(bidUsdc),
+      })
+      setLiveSecret(next)
+      setLiveNotice('Secret prepared for this wallet and auction. Encrypt it before committing.')
+    } catch (error) {
+      setLiveNotice(error instanceof Error ? error.message : 'Could not prepare this bid secret.')
+    }
+  }
+
+  async function saveLiveSecret() {
+    if (!liveSecret) {
+      setLiveNotice('Prepare a live auction secret before encrypting it.')
+      return
+    }
+    try {
+      const record = await encryptBidSecret(liveSecret, vaultPassword)
+      saveVaultRecord(localStorage, record)
+      const records = listVaultRecords(localStorage)
+      setVaultRecords(records)
+      setSelectedVaultCommitment(record.commitment)
+      setVaultPassword('')
+      setLiveNotice('Encrypted vault record saved locally. Your password is never stored.')
+    } catch (error) {
+      setLiveNotice(error instanceof Error ? error.message : 'Could not encrypt this vault record.')
+    }
+  }
+
+  async function unlockVaultRecord() {
+    const record = vaultRecords.find((candidate) => candidate.commitment === selectedVaultCommitment)
+    if (!record) {
+      setLiveNotice('Choose an encrypted vault record to unlock.')
+      return
+    }
+    try {
+      const unlocked = await decryptBidSecret(record, vaultPassword)
+      if (unlocked.chainId !== 1301 || !addressesMatch(unlocked.auctionAddress, liveContracts.auction)) {
+        throw new Error('This vault secret is not for the configured Unichain Sepolia auction.')
+      }
+      if (connectedAddress && !addressesMatch(unlocked.bidder, connectedAddress)) {
+        throw new Error('This vault secret belongs to a different wallet.')
+      }
+      setLiveSecret(unlocked)
+      setLiveAuctionId(unlocked.auctionId)
+      setBidPreflight(null)
+      setBidUsdc(unlocked.bidUsdc)
+      setVaultPassword('')
+      setLiveNotice('Vault record unlocked for this browser session. Reload auction preflight before writing.')
+    } catch (error) {
+      setLiveNotice(error instanceof Error ? error.message : 'Could not unlock the vault record.')
+    }
+  }
+
+  async function runBidAction(action: 'approve-commit' | 'commit' | 'approve-reveal' | 'reveal' | 'refund') {
+    const provider = getInjectedProvider()
+    if (!provider || !connectedAddress || !bidPreflight) {
+      setLiveNotice('Connect a wallet and load auction preflight before sending a transaction.')
+      return
+    }
+    try {
+      const auctionId = BigInt(liveAuctionId)
+      const bid = liveSecret ? BigInt(liveSecret.bidAmountAtomic) : parseUsdc(bidUsdc)
+      if (liveSecret && (
+        liveSecret.auctionId !== liveAuctionId
+        || liveSecret.chainId !== 1301
+        || !addressesMatch(liveSecret.auctionAddress, liveContracts.auction)
+        || !addressesMatch(liveSecret.bidder, connectedAddress)
+      )) throw new Error('The secret does not match this wallet and configured auction.')
+      let hash: Hex
+      if (action === 'approve-commit') hash = await approveBidToken(provider, connectedAddress, requiredAllowance('commit', bidPreflight.auction.bond, bid))
+      else if (action === 'approve-reveal') hash = await approveBidToken(provider, connectedAddress, requiredAllowance('reveal', bidPreflight.auction.bond, bid))
+      else if (action === 'commit') {
+        if (!liveSecret) throw new Error('Prepare and encrypt the matching secret before committing.')
+        hash = await commitBid(provider, connectedAddress, auctionId, liveSecret.commitment)
+      } else if (action === 'reveal') {
+        if (!liveSecret) throw new Error('Unlock the matching vault secret before revealing.')
+        hash = await revealBid(provider, connectedAddress, auctionId, BigInt(liveSecret.bidAmountAtomic), liveSecret.salt)
+      } else hash = await withdrawRefund(provider, connectedAddress, auctionId)
+      setTransaction({ label: action.replace('-', ' '), hash })
+      setLiveNotice('Transaction confirmed on Unichain Sepolia.')
+      await loadBidPreflight()
+    } catch (error) {
+      setLiveNotice(error instanceof Error ? error.message : 'The wallet transaction could not be completed.')
+    }
+  }
+
+  async function scheduleLiveAuction() {
+    const provider = getInjectedProvider()
+    if (!provider || !connectedAddress || !isOperator) {
+      setLiveNotice('Only the immutable auction deployer on Unichain Sepolia can schedule an auction.')
+      return
+    }
+    try {
+      const nextAuctionId = await readNextAuctionId()
+      const block = await publicClient.getBlock()
+      const schedule = buildSchedule(block.timestamp, operatorDurations)
+      const hash = await createAuction(provider, connectedAddress, schedule, parseUsdc(operatorBond), parseUsdc(operatorMinimumBid))
+      setLiveAuctionId(nextAuctionId.toString())
+      setBidPreflight(null)
+      setTransaction({ label: `schedule auction #${nextAuctionId}`, hash })
+      setLiveNotice(`Auction #${nextAuctionId} was scheduled. Load it to begin bidder preflight.`)
+    } catch (error) {
+      setLiveNotice(error instanceof Error ? error.message : 'The auction schedule transaction could not be completed.')
+    }
+  }
+
+  async function collectLiveProceeds() {
+    const provider = getInjectedProvider()
+    if (!provider || !connectedAddress || !isOperator) {
+      setLiveNotice('Only the immutable auction deployer can collect proceeds.')
+      return
+    }
+    try {
+      const hash = await collectProceeds(provider, connectedAddress)
+      setTransaction({ label: 'collect proceeds', hash })
+      setLiveNotice('Proceeds collection confirmed on Unichain Sepolia.')
+    } catch (error) {
+      setLiveNotice(error instanceof Error ? error.message : 'No collectible proceeds are available yet.')
     }
   }
 
@@ -254,7 +441,7 @@ function App() {
         </div>
         <p className="intro-copy">
           A real Unichain Sepolia runtime beside a guided local auction demo. Read-only wiring is checked against
-          the deployed stack; every lifecycle receipt remains explicitly off-chain until the bidder-flow chunk.
+          the deployed stack; live actions require an explicit wallet confirmation and simulator receipts remain off-chain.
         </p>
       </section>
 
@@ -294,6 +481,70 @@ function App() {
           <button className="text-button" onClick={refreshProtocol} type="button">Refresh read-only state</button>
           <a className="text-button" href={explorerUrl(liveContracts.hook)} rel="noreferrer" target="_blank">View hook ↗</a>
         </div>
+      </section>
+
+      <section className="live-control-grid" aria-label="Live bidder and operator controls">
+        <article className="live-panel bidder-panel">
+          <div className="panel-topline"><p className="eyebrow">Live bidder flow</p><span className="live-tag">WALLET CONFIRMED WRITES</span></div>
+          <h2>Commit only what you can reveal.</h2>
+          <p className="panel-copy">Each button opens your connected wallet. The app asks for exact allowance amounts; it never stores a wallet key or raw secret in local storage.</p>
+          <div className="auction-load-row">
+            <label htmlFor="live-auction-id">Auction ID<input id="live-auction-id" inputMode="numeric" min="1" onChange={(event) => { setLiveAuctionId(event.target.value); setBidPreflight(null); setLiveSecret(null) }} type="number" value={liveAuctionId} /></label>
+            <button className="button outline" onClick={loadBidPreflight} type="button">Load live auction</button>
+          </div>
+          {bidPreflight ? (
+            <div className="preflight-grid">
+              <span><b>Phase</b>{phaseLabel(bidPreflight.phase)}</span><span><b>Bond</b>{formatUsdc(bidPreflight.auction.bond)}</span><span><b>Minimum</b>{formatUsdc(bidPreflight.auction.minimumBid)}</span><span><b>Balance</b>{formatUsdc(bidPreflight.balance)}</span><span><b>Allowance</b>{formatUsdc(bidPreflight.allowance)}</span>
+            </div>
+          ) : <p className="empty-live">No auction loaded. Scheduling remains a separate deployer action.</p>}
+          <div className="live-secret-row">
+            <button className="button ink" disabled={!bidPreflight} onClick={prepareLiveSecret} type="button">Prepare auction secret</button>
+            <span>{liveSecret ? `Ready · ${shortHash(liveSecret.commitment)}` : 'Secret not prepared'}</span>
+          </div>
+          <div className="vault-box">
+            <div><span className="step-cap">Encrypted local vault</span><strong>{vaultRecords.length} saved record{vaultRecords.length === 1 ? '' : 's'}</strong></div>
+            <label htmlFor="vault-password">Vault password<input autoComplete="new-password" id="vault-password" minLength={12} onChange={(event) => setVaultPassword(event.target.value)} placeholder="12+ characters" type="password" value={vaultPassword} /></label>
+            <div className="vault-actions">
+              <button className="button ghost" disabled={!liveSecret} onClick={saveLiveSecret} type="button">Encrypt & save</button>
+              <select aria-label="Encrypted vault record" onChange={(event) => setSelectedVaultCommitment(event.target.value)} value={selectedVaultCommitment}>
+                <option value="">Choose saved record</option>
+                {vaultRecords.map((record) => <option key={record.commitment} value={record.commitment}>#{record.auctionId} · {shortHash(record.commitment)}</option>)}
+              </select>
+              <button className="button ghost" disabled={!selectedVaultCommitment} onClick={unlockVaultRecord} type="button">Unlock selected</button>
+            </div>
+          </div>
+          <div className="write-row">
+            <button className="button outline" disabled={!bidPreflight} onClick={() => runBidAction('approve-commit')} type="button">Approve bond</button>
+            <button className="button coral" disabled={!bidPreflight || !liveSecret || bidPreflight.phase !== 1} onClick={() => runBidAction('commit')} type="button">Commit hash</button>
+            <button className="button outline" disabled={!bidPreflight} onClick={() => runBidAction('approve-reveal')} type="button">Approve bid</button>
+            <button className="button coral" disabled={!bidPreflight || !liveSecret || bidPreflight.phase !== 2} onClick={() => runBidAction('reveal')} type="button">Reveal bid</button>
+            <button className="button outline" disabled={!bidPreflight} onClick={() => runBidAction('refund')} type="button">Claim refund</button>
+          </div>
+        </article>
+
+        <article className={`live-panel operator-panel ${isOperator ? 'is-operator' : ''}`}>
+          <div className="panel-topline"><p className="eyebrow">Deployer controls</p><span className={isOperator ? 'operator-tag ready' : 'operator-tag'}>{isOperator ? 'DEPLOYER VERIFIED' : 'DEPLOYER ONLY'}</span></div>
+          <h2>Set the window. Keep it fixed.</h2>
+          <p className="panel-copy">Only the immutable auction deployer can create schedules or collect proceeds. The KRA/KRB pool ID is fixed from the verified bootstrap.</p>
+          <div className="schedule-fields">
+            <NumberField label="Start delay (min)" value={operatorDurations.commitDelayMinutes} onChange={(value) => setOperatorDurations({ ...operatorDurations, commitDelayMinutes: value })} />
+            <NumberField label="Commit (min)" value={operatorDurations.commitDurationMinutes} onChange={(value) => setOperatorDurations({ ...operatorDurations, commitDurationMinutes: value })} />
+            <NumberField label="Reveal (min)" value={operatorDurations.revealDurationMinutes} onChange={(value) => setOperatorDurations({ ...operatorDurations, revealDurationMinutes: value })} />
+            <NumberField label="Activation wait (min)" value={operatorDurations.activationDelayMinutes} onChange={(value) => setOperatorDurations({ ...operatorDurations, activationDelayMinutes: value })} />
+            <NumberField label="Right (min)" value={operatorDurations.rightDurationMinutes} onChange={(value) => setOperatorDurations({ ...operatorDurations, rightDurationMinutes: value })} />
+          </div>
+          <div className="operator-money">
+            <label htmlFor="operator-bond">Bond (MockUSDC)<input id="operator-bond" inputMode="decimal" onChange={(event) => setOperatorBond(event.target.value)} value={operatorBond} /></label>
+            <label htmlFor="operator-minimum">Minimum bid (MockUSDC)<input id="operator-minimum" inputMode="decimal" onChange={(event) => setOperatorMinimumBid(event.target.value)} value={operatorMinimumBid} /></label>
+          </div>
+          <p className="operator-pool">Pool ID <code>{shortHash(liveContracts.poolId)}</code> · activation wait must remain at least 30 minutes.</p>
+          <div className="operator-actions"><button className="button ink" disabled={!isOperator} onClick={scheduleLiveAuction} type="button">Create fixed auction</button><button className="button ghost" disabled={!isOperator} onClick={collectLiveProceeds} type="button">Collect proceeds</button></div>
+          {!isOperator && <p className="operator-lock">Connect the immutable deployer wallet to unlock these controls.</p>}
+        </article>
+      </section>
+      <section className="transaction-strip" aria-live="polite">
+        <div><span className="step-cap">Live transaction status</span><strong>{liveNotice}</strong></div>
+        {transaction && <a className="button ghost" href={explorerTransaction(transaction.hash)} rel="noreferrer" target="_blank">{transaction.label} ↗</a>}
       </section>
 
       <section className="work-grid" aria-label="Auction bidder workstation">
@@ -417,8 +668,8 @@ function App() {
       <section className="deployment-section">
         <div>
           <p className="eyebrow">Live testnet runtime</p>
-          <h2>Addresses are real. Writes are still gated.</h2>
-          <p>Read-only calls validate the deployed auction, executor and hook wiring on Unichain Sepolia. Wallet connection is ready, but approvals, commits, reveals and refunds arrive in the next bidder-flow chunk.</p>
+          <h2>Addresses are real. Writes are wallet-gated.</h2>
+          <p>Read-only calls validate the deployed auction, executor and hook wiring on Unichain Sepolia. Live approvals, commits, reveals, refunds and deployer actions stay inactive until the connected wallet meets their preflight checks.</p>
         </div>
         <button className="button outline" onClick={() => setShowLiveConfig(!showLiveConfig)} type="button">
           {showLiveConfig ? 'Hide wiring checklist' : 'Show wiring checklist'}
@@ -434,7 +685,7 @@ function App() {
         )}
       </section>
 
-      <footer><span>PFDA prototype · Unichain Sepolia read-only + local demo</span><span>Full waiver of the app-level surcharge only</span></footer>
+      <footer><span>PFDA prototype · Unichain Sepolia wallet mode + local demo</span><span>Full waiver of the app-level surcharge only</span></footer>
     </main>
   )
 }
@@ -451,6 +702,24 @@ function FeeCard({ caption, result, tone }: { caption: string; result: ReturnTyp
       </dl>
     </article>
   )
+}
+
+function NumberField({ label, onChange, value }: { label: string; onChange: (value: number) => void; value: number }) {
+  const id = `operator-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+  return (
+    <label htmlFor={id}>{label}
+      <input id={id} inputMode="numeric" min="1" onChange={(event) => onChange(Number(event.target.value))} type="number" value={value} />
+    </label>
+  )
+}
+
+function phaseLabel(phase: number): string {
+  const labels = ['Scheduled', 'Commit open', 'Reveal open', 'Awaiting finalization', 'Pending activation', 'Active', 'Expired', 'Cancelled']
+  return labels[phase] ?? 'Unknown phase'
+}
+
+function formatUsdc(value: bigint): string {
+  return `${formatUnits(value, 6)} MockUSDC`
 }
 
 function normalizedBid(value: string): string {
