@@ -68,3 +68,9 @@
 - Added a separate scheduling script. It does not contain bidder secrets and does not run automatically; its timing, bid bond and reserve are explicit local configuration that must be reviewed before a public rehearsal.
 - Added a real-v4 bootstrap test covering sorted currencies, hook pool initialization, liquidity settlement and the immutable relationship between manager, auction, executor and hook. Local verification is 74 passing tests.
 - Broadcast and independently verified the KRA/KRB hook pool in Unichain Sepolia block `62101827`. The public manifest records every contract address and core transaction hash; RPC checks confirmed token metadata, contract bytecode, successful receipts and nonzero seeded token balances at the PoolManager. No auction has been scheduled yet.
+
+## Chunk 8: Unichain wallet runtime
+
+- Added a typed Unichain Sepolia registry with the verified deployed contracts, pool ID, explorer routes, an injected EIP-1193 wallet adapter, chain guard and switch request, and a viem read-only client.
+- The workstation now shows disconnected, unavailable, wrong-network and connected wallet states. It verifies the auction → executor → hook immutable wiring live and displays the verification block plus explorer links. It does not create approvals or submit any auction transaction.
+- Added frontend tests for the verified registry, explorer routes, chain parsing/guard, wallet hydration and the exact `wallet_switchEthereumChain` request. `npm run lint`, 8 Vitest tests and the production build pass; browser checks confirmed the responsive desktop/mobile runtime. The full Solidity suite remains green with 74 tests.

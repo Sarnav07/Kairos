@@ -21,6 +21,10 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .masthead-right { display: flex; gap: 22px; align-items: center; color: #506a84; font-size: 12px; }
 .network-chip { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid #b5c9dc; border-radius: 999px; background: #e7f0f9; color: #223c58; font-weight: 700; }
 .network-chip i, .pulse { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #31ae84; box-shadow: 0 0 0 3px rgba(49,174,132,.15); }
+.wallet-chip.wrong-network i, .wallet-chip.error i, .wallet-chip.unavailable i { background: #e75d42; box-shadow: 0 0 0 3px rgba(231,93,66,.15); }
+.wallet-chip.checking i { background: #ffdb55; box-shadow: 0 0 0 3px rgba(255,219,85,.22); }
+.connect-button { padding: 8px 0; border: 0; border-bottom: 1px solid #3c607f; background: transparent; color: #24445f; font-size: 12px; font-weight: 800; }
+.connect-button:hover { color: #d54d34; border-color: #d54d34; }
 .mono, code, .serial, .simulation-label { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
 
 .intro { display: flex; justify-content: space-between; align-items: end; padding: 76px 0 56px; gap: 50px; }
@@ -50,6 +54,21 @@ h1 span { color: #e75d42; }
 .status-strip div:first-child { border-left-color: #e75d42; }
 .status-strip span, .step-cap { display: block; margin-bottom: 5px; color: #5d7790; font: 700 10px/1 "SFMono-Regular", Consolas, monospace; letter-spacing: .1em; text-transform: uppercase; }
 .status-strip strong { color: #1b3652; font-size: 13px; }
+
+.runtime-rail { display: grid; grid-template-columns: 1.45fr 1fr 1fr auto; align-items: stretch; border-bottom: 1px solid #9db6cf; background: #d1e2f1; }
+.runtime-rail > * { min-width: 0; padding: 16px 17px; border-right: 1px solid #a8bed2; }
+.runtime-rail > *:last-child { border-right: 0; }
+.runtime-label { display: flex; align-items: center; gap: 12px; background: #092443; color: #e8f4ff; }
+.live-dot { width: 10px; height: 10px; flex: 0 0 auto; border-radius: 50%; background: #4de2a8; box-shadow: 0 0 0 4px rgba(77,226,168,.18); }
+.live-dot.dim { background: #ffdb55; box-shadow: 0 0 0 4px rgba(255,219,85,.17); }
+.runtime-label b, .runtime-wallet span { display: block; color: inherit; font: 800 10px/1 "SFMono-Regular", Consolas, monospace; letter-spacing: .11em; }
+.runtime-label small { display: block; margin-top: 5px; color: #a9c6df; font-size: 11px; }
+.runtime-wallet { background: rgba(255,255,255,.22); }
+.runtime-wallet span { color: #5b7690; }
+.runtime-wallet strong { display: block; margin: 5px 0 3px; overflow: hidden; color: #183a57; font: 800 13px/1.2 "SFMono-Regular", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.runtime-wallet small { color: #5c7791; font-size: 10px; }
+.runtime-actions { display: grid; align-content: center; gap: 8px; background: #e3eef8; }
+.runtime-actions .text-button { width: max-content; max-width: 100%; text-decoration: none; }
 
 .work-grid { display: grid; grid-template-columns: minmax(0, 1.34fr) minmax(330px, .8fr); gap: 18px; padding: 40px 0 78px; }
 .ticket-panel, .command-panel, .receipt-panel { border: 1px solid #a5bdd2; box-shadow: 8px 8px 0 rgba(7,27,51,.1); }
@@ -145,7 +164,10 @@ dl div { display: contents; } dt { color: #617c94; font-size: 11px; } dd { margi
 .deployment-section h2 { margin: 0 0 10px; font-size: 31px; }
 .deployment-section p:last-child { max-width: 650px; margin: 0; color: #526e87; font-size: 13px; line-height: 1.5; }
 .wiring-checklist { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; padding-top: 20px; border-top: 1px solid #9db6cf; }
-.wiring-checklist span { padding: 10px; background: #e7f1fa; color: #365572; font: 800 10px/1.35 "SFMono-Regular", Consolas, monospace; }
+.wiring-checklist a { display: grid; gap: 6px; padding: 10px; background: #e7f1fa; color: #365572; text-decoration: none; font: 800 10px/1.35 "SFMono-Regular", Consolas, monospace; }
+.wiring-checklist a:hover { background: #ffeb9a; color: #071b33; }
+.wiring-checklist b { color: #5b7893; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+.wiring-checklist code { color: inherit; font-size: 10px; }
 footer { display: flex; justify-content: space-between; padding: 17px 0 29px; color: #5b7590; border-top: 1px solid #a2bbd0; font: 10px/1.4 "SFMono-Regular", Consolas, monospace; }
 
 @media (max-width: 820px) {
@@ -156,6 +178,9 @@ footer { display: flex; justify-content: space-between; padding: 17px 0 29px; co
   .ribbon-wrap { margin: 0 -18px; padding: 0 18px; overflow-x: auto; }
   .phase-ribbon { min-width: 670px; }
   .status-strip { grid-template-columns: 1fr 1fr; }
+  .runtime-rail { grid-template-columns: 1fr 1fr; }
+  .runtime-rail > *:nth-child(2) { border-right: 0; }
+  .runtime-rail > *:nth-child(-n+2) { border-bottom: 1px solid #a8bed2; }
   .work-grid, .comparison { grid-template-columns: 1fr; }
   .work-grid { padding: 28px 0 55px; }
   .waiver-arrow { justify-self: center; width: 190px; margin: -2px 0; }
@@ -167,6 +192,9 @@ footer { display: flex; justify-content: space-between; padding: 17px 0 29px; co
 @media (max-width: 500px) {
   .shell { padding: 0 14px; }
   .masthead { min-height: 66px; }
+  .masthead-right { gap: 11px; }
+  .wallet-chip { max-width: 132px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .connect-button { font-size: 11px; }
   h1 { font-size: 47px; }
   .ticket-panel { padding: 25px 19px; }
   .two-up { grid-template-columns: 1fr; }
@@ -177,6 +205,9 @@ footer { display: flex; justify-content: space-between; padding: 17px 0 29px; co
   .command-panel, .receipt-panel { padding: 22px 18px; }
   .fee-card { padding: 22px 18px; }
   .deployment-section { padding: 24px 19px; }
+  .runtime-rail { grid-template-columns: 1fr; }
+  .runtime-rail > * { border-right: 0; border-bottom: 1px solid #a8bed2; }
+  .runtime-rail > *:last-child { border-bottom: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

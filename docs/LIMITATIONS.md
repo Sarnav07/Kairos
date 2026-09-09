@@ -17,6 +17,6 @@
 
 ## Deployment and product status
 
-- The frontend is a local simulator until addresses and a wallet connector are added after testnet deployment. Its receipts are not on-chain transactions.
-- At the time of this document, no public testnet deployment, explorer receipt, public GitHub remote, demo video, or submitted feedback form exists.
+- The frontend has a read-only Unichain Sepolia wallet/runtime layer, but its lifecycle receipts remain local simulations until the bidder transaction flow is implemented. A connected wallet alone does not submit any transaction in the current version.
+- The contract stack and KRA/KRB demonstration pool are publicly deployed on Unichain Sepolia, with addresses and receipts committed in `deployments/unichain-sepolia.json`. A complete auction rehearsal, demo video and submitted feedback form remain outstanding.
 - A production implementation needs further threat modeling, audit, deployment monitoring, key management, frontend transaction state handling, and protocol-specific review.

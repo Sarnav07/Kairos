@@ -4,7 +4,7 @@ ETHOnline 2026 Start Fresh prototype of the Protocol Fee Discount Auction descri
 
 ## Status
 
-Chunks 0–7 are complete. The PFDA contracts and a hook-enabled KRA/KRB demonstration pool are deployed and independently verified on Unichain Sepolia. MockUSDC funds bids and the deploying wallet receives proceeds. The remaining live-demo work is wallet flows, deliberate auction scheduling, and the two-bidder rehearsal.
+Chunks 0–8 are complete. The PFDA contracts and a hook-enabled KRA/KRB demonstration pool are deployed and independently verified on Unichain Sepolia. The workstation now connects to Unichain Sepolia wallets and verifies the live contract wiring read-only. MockUSDC funds bids and the deploying wallet receives proceeds. The remaining live-demo work is transaction flows, deliberate auction scheduling, and the two-bidder rehearsal.
 
 ## Agreed scope
 
@@ -53,7 +53,7 @@ Known constraints are collected in [LIMITATIONS.md](docs/LIMITATIONS.md). The re
 
 ## Local demo workstation
 
-The React/Vite app in [app/](app/) currently remains an offline simulation. It makes a domain-bound commit secret, exports/recover it as JSON, produces receipts labelled as local simulation, and models the difference between an ordinary caller and an active PFDA winner. The contracts now have testnet addresses, but wallet integration and live transaction handling are the next chunk.
+The React/Vite app in [app/](app/) connects to an injected wallet, guards for Unichain Sepolia, reads and validates the deployed auction/executor/hook wiring, and links each configured contract to Uniscan. Its lifecycle controls and receipts remain clearly labelled local simulations; approval, commit, reveal and refund transactions are the next chunk.
 
 ```sh
 cd app
@@ -75,4 +75,4 @@ The reproducible Unichain Sepolia deployment path is in [script/DeployPFDA.s.sol
 - [Official v4 deployment addresses](https://developers.uniswap.org/docs/protocols/v4/deployments)
 - Supplied paper: *The Protocol Fee Discount Auction*, October 2025. Section 2 defines the mechanism; Section 4's economic results are model predictions, not guarantees for this prototype.
 
-Before submission, finish the public pool bootstrap, auction and swap evidence, wallet demo, exact contract/code permalinks, demo recording, and feedback-form status.
+Before submission, finish the auction and swap evidence, bidder transaction flows, demo recording, and feedback-form status.

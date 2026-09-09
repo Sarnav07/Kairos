@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
+import type { Address } from 'viem'
 import {
   createBidSecret,
   DEMO_AUCTION_ADDRESS,
@@ -10,6 +11,16 @@ import {
   parseBidSecret,
   simulateTrade,
 } from './lib/domain'
+import {
+  getInjectedProvider,
+  getWalletSnapshot,
+  isUnichainSepolia,
+  liveContracts,
+  readProtocolSnapshot,
+  shortAddress,
+  switchToUnichainSepolia,
+  type ProtocolSnapshot,
+} from './lib/testnet'
 
 type Phase = 'Schedule' | 'Commit' | 'Reveal' | 'Settle' | 'Active'
 
@@ -18,6 +29,18 @@ type Receipt = {
   title: string
   detail: string
   phase: Phase
+}
+
+type WalletState = {
+  status: 'checking' | 'unavailable' | 'disconnected' | 'wrong-network' | 'connected' | 'error'
+  address: Address | null
+  chainId: number | null
+  message?: string
+}
+
+type ProtocolState = {
+  status: 'loading' | 'ready' | 'error'
+  snapshot: ProtocolSnapshot | null
 }
 
 const phases: { name: Phase; description: string }[] = [
@@ -31,10 +54,10 @@ const phases: { name: Phase; description: string }[] = [
 const auction = {
   id: '07',
   token: 'MockUSDC',
-  pool: 'USDC / WETH · 0.25%',
+  pool: 'KRA / KRB · 0.25%',
   bond: '5.00 USDC',
   minimumBid: '10.00 USDC',
-  window: '24h right · 30m activation delay',
+  window: 'No live auction scheduled',
 }
 
 function App() {
@@ -45,6 +68,8 @@ function App() {
   const [receipts, setReceipts] = useState<Receipt[]>([])
   const [grossInput, setGrossInput] = useState('10000')
   const [showLiveConfig, setShowLiveConfig] = useState(false)
+  const [wallet, setWallet] = useState<WalletState>({ status: 'checking', address: null, chainId: null })
+  const [protocol, setProtocol] = useState<ProtocolState>({ status: 'loading', snapshot: null })
   const inputRef = useRef<HTMLInputElement>(null)
 
   const ordinary = useMemo(
@@ -56,6 +81,74 @@ function App() {
     [grossInput],
   )
   const phase = phases[phaseIndex]
+
+  useEffect(() => {
+    void refreshProtocol()
+    void refreshWallet()
+  }, [])
+
+  async function refreshProtocol() {
+    setProtocol((current) => ({ ...current, status: 'loading' }))
+    try {
+      const snapshot = await readProtocolSnapshot()
+      setProtocol({ status: 'ready', snapshot })
+    } catch {
+      setProtocol({ status: 'error', snapshot: null })
+    }
+  }
+
+  async function refreshWallet(requestAccounts = false) {
+    const provider = getInjectedProvider()
+    if (!provider) {
+      setWallet({ status: 'unavailable', address: null, chainId: null })
+      return
+    }
+    try {
+      const snapshot = await getWalletSnapshot(provider, requestAccounts)
+      if (!snapshot.address) {
+        setWallet({ status: 'disconnected', ...snapshot })
+        return
+      }
+      setWallet({
+        status: isUnichainSepolia(snapshot.chainId) ? 'connected' : 'wrong-network',
+        ...snapshot,
+      })
+    } catch {
+      setWallet({
+        status: 'error',
+        address: null,
+        chainId: null,
+        message: 'Wallet access was declined or is unavailable.',
+      })
+    }
+  }
+
+  async function connectWallet() {
+    const provider = getInjectedProvider()
+    if (!provider) {
+      setWallet({
+        status: 'unavailable',
+        address: null,
+        chainId: null,
+        message: 'Install or unlock an EIP-1193 wallet such as MetaMask to connect.',
+      })
+      return
+    }
+    await refreshWallet(true)
+    const snapshot = await getWalletSnapshot(provider)
+    if (snapshot.address && !isUnichainSepolia(snapshot.chainId)) {
+      try {
+        await switchToUnichainSepolia(provider)
+        await refreshWallet()
+      } catch {
+        setWallet({
+          status: 'wrong-network',
+          ...snapshot,
+          message: 'Switch this wallet to Unichain Sepolia (chain 1301) to use live mode.',
+        })
+      }
+    }
+  }
 
   function prepareSecret() {
     try {
@@ -149,8 +242,8 @@ function App() {
           <span>PFDA <em>workstation</em></span>
         </a>
         <div className="masthead-right">
-          <span className="network-chip"><i /> Local simulation</span>
-          <span className="mono">Auction #{auction.id}</span>
+          <span className={`network-chip wallet-chip ${wallet.status}`}><i /> {walletLabel(wallet)}</span>
+          <button className="connect-button" onClick={connectWallet} type="button">{walletAction(wallet)}</button>
         </div>
       </header>
 
@@ -160,13 +253,13 @@ function App() {
           <h1>Prepare the bid.<br /><span>Protect the secret.</span></h1>
         </div>
         <p className="intro-copy">
-          A guided local demo for an application-fee waiver right. It mirrors the project’s auction sequence,
-          while keeping all generated receipts explicitly off-chain.
+          A real Unichain Sepolia runtime beside a guided local auction demo. Read-only wiring is checked against
+          the deployed stack; every lifecycle receipt remains explicitly off-chain until the bidder-flow chunk.
         </p>
       </section>
 
       <section className="ribbon-wrap" aria-label="Auction timeline">
-        <div className="ribbon-note"><span className="pulse" /> DEMO CLOCK · {phase.name.toUpperCase()}</div>
+        <div className="ribbon-note"><span className="pulse" /> LOCAL DEMO CLOCK · {phase.name.toUpperCase()}</div>
         <div className="phase-ribbon">
           {phases.map((item, index) => (
             <button
@@ -188,6 +281,19 @@ function App() {
         <div><span>Bid asset</span><strong>{auction.token} · 6 decimals</strong></div>
         <div><span>Bid floor</span><strong>{auction.minimumBid}</strong></div>
         <div><span>Right window</span><strong>{auction.window}</strong></div>
+      </section>
+
+      <section className="runtime-rail" aria-label="Live Unichain Sepolia runtime">
+        <div className="runtime-label">
+          <span className={protocol.status === 'ready' && protocol.snapshot?.wiringValid ? 'live-dot' : 'live-dot dim'} />
+          <div><b>LIVE WIRING</b><small>{protocolLabel(protocol)}</small></div>
+        </div>
+        <div className="runtime-wallet"><span>Wallet</span><strong>{shortAddress(wallet.address)}</strong><small>{wallet.chainId ? `chain ${wallet.chainId}` : 'read-only is available'}</small></div>
+        <div className="runtime-wallet"><span>Pool</span><strong>KRA / KRB</strong><small>{shortHash(liveContracts.poolId)}</small></div>
+        <div className="runtime-actions">
+          <button className="text-button" onClick={refreshProtocol} type="button">Refresh read-only state</button>
+          <a className="text-button" href={explorerUrl(liveContracts.hook)} rel="noreferrer" target="_blank">View hook ↗</a>
+        </div>
       </section>
 
       <section className="work-grid" aria-label="Auction bidder workstation">
@@ -310,21 +416,25 @@ function App() {
 
       <section className="deployment-section">
         <div>
-          <p className="eyebrow">Deployment boundary</p>
-          <h2>Ready for contract addresses, not pretending they exist.</h2>
-          <p>The workstation deliberately stays local until the auction, executor, fee hook, and token are deployed to testnet. Connect wallet and contract calls in the next deployment chunk.</p>
+          <p className="eyebrow">Live testnet runtime</p>
+          <h2>Addresses are real. Writes are still gated.</h2>
+          <p>Read-only calls validate the deployed auction, executor and hook wiring on Unichain Sepolia. Wallet connection is ready, but approvals, commits, reveals and refunds arrive in the next bidder-flow chunk.</p>
         </div>
         <button className="button outline" onClick={() => setShowLiveConfig(!showLiveConfig)} type="button">
           {showLiveConfig ? 'Hide wiring checklist' : 'Show wiring checklist'}
         </button>
         {showLiveConfig && (
           <div className="wiring-checklist">
-            <span>01 Auction address</span><span>02 Executor address</span><span>03 Hook address</span><span>04 MockUSDC address</span><span>05 RPC + wallet connector</span>
+            <ExplorerAddress label="Auction" address={liveContracts.auction} />
+            <ExplorerAddress label="Executor" address={liveContracts.executor} />
+            <ExplorerAddress label="Fee hook" address={liveContracts.hook} />
+            <ExplorerAddress label="MockUSDC" address={liveContracts.mockUsdc} />
+            <ExplorerAddress label="PoolManager" address={liveContracts.poolManager} />
           </div>
         )}
       </section>
 
-      <footer><span>PFDA prototype · Local demo</span><span>Full waiver of the app-level surcharge only</span></footer>
+      <footer><span>PFDA prototype · Unichain Sepolia read-only + local demo</span><span>Full waiver of the app-level surcharge only</span></footer>
     </main>
   )
 }
@@ -353,6 +463,36 @@ function normalizedBid(value: string): string {
 
 function shortHash(value: string): string {
   return `${value.slice(0, 10)}···${value.slice(-8)}`
+}
+
+function explorerUrl(address: Address): string {
+  return `https://sepolia.uniscan.xyz/address/${address}`
+}
+
+function walletLabel(wallet: WalletState): string {
+  if (wallet.status === 'connected') return `Unichain Sepolia · ${shortAddress(wallet.address)}`
+  if (wallet.status === 'wrong-network') return 'Wrong network'
+  if (wallet.status === 'unavailable') return 'No wallet found'
+  if (wallet.status === 'checking') return 'Checking wallet'
+  if (wallet.status === 'error') return 'Wallet needs attention'
+  return 'Wallet not connected'
+}
+
+function walletAction(wallet: WalletState): string {
+  if (wallet.status === 'connected') return 'Refresh wallet'
+  if (wallet.status === 'wrong-network') return 'Switch to Unichain'
+  return 'Connect wallet'
+}
+
+function protocolLabel(protocol: ProtocolState): string {
+  if (protocol.status === 'loading') return 'Checking auction → executor → hook'
+  if (protocol.status === 'error') return 'Read-only RPC check unavailable'
+  if (protocol.snapshot?.wiringValid) return `Verified at block ${protocol.snapshot.blockNumber.toString()}`
+  return 'Live wiring did not match the committed registry'
+}
+
+function ExplorerAddress({ address, label }: { address: Address; label: string }) {
+  return <a href={explorerUrl(address)} rel="noreferrer" target="_blank"><b>{label}</b><code>{shortAddress(address)} ↗</code></a>
 }
 
 export default App
