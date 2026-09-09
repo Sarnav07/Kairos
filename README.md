@@ -4,7 +4,7 @@ ETHOnline 2026 Start Fresh prototype of the Protocol Fee Discount Auction descri
 
 ## Status
 
-Chunks 0–10 are complete. The PFDA contracts and a hook-enabled KRA/KRB demonstration pool are deployed and independently verified on Unichain Sepolia. The workstation connects to Unichain Sepolia wallets, verifies live wiring, supplies bidder approval/commit/reveal/refund controls, and keeps bid recovery records encrypted locally. The immutable deploying wallet alone can schedule a fixed auction or collect proceeds. No live auction has been scheduled yet; the remaining demo work is the two-bidder rehearsal and evidence dashboard.
+Chunks 0–11 are complete. The PFDA contracts and a hook-enabled KRA/KRB demonstration pool are deployed and independently verified on Unichain Sepolia. The workstation connects to Unichain Sepolia wallets, verifies live wiring, supplies bidder approval/commit/reveal/refund controls, and keeps bid recovery records encrypted locally. The immutable deploying wallet alone can schedule a fixed auction or collect proceeds. A read-only dashboard shows live phase/countdowns, state, event receipts and a two-bidder rehearsal checklist. No live auction has been scheduled yet; the remaining demo work is recording that rehearsal and its evidence.
 
 ## Agreed scope
 
@@ -53,7 +53,7 @@ Known constraints are collected in [LIMITATIONS.md](docs/LIMITATIONS.md). The re
 
 ## Local demo workstation
 
-The React/Vite app in [app/](app/) connects to an injected wallet, guards for Unichain Sepolia, reads and validates the deployed auction/executor/hook wiring, and links each configured contract to Uniscan. It has explicit-wallet-confirmed, exact-allowance controls for approval, commit, reveal and refund, as well as an AES-GCM encrypted local bid vault. A separate deployer-gated panel creates fixed schedules and collects proceeds. Its receipt ledger remains a local simulator; it is not an event indexer.
+The React/Vite app in [app/](app/) connects to an injected wallet, guards for Unichain Sepolia, reads and validates the deployed auction/executor/hook wiring, and links each configured contract to Uniscan. It has explicit-wallet-confirmed, exact-allowance controls for approval, commit, reveal and refund, as well as an AES-GCM encrypted local bid vault. A separate deployer-gated panel creates fixed schedules and collects proceeds. Its read-only evidence dashboard shows the live auction phase, fixed-window countdown, counts, winner/right state, treasury/refund values, recent events and the remaining two-bidder rehearsal steps. The older receipt ledger remains a local simulator; it is not an event indexer.
 
 ```sh
 cd app
@@ -75,4 +75,4 @@ The reproducible Unichain Sepolia deployment path is in [script/DeployPFDA.s.sol
 - [Official v4 deployment addresses](https://developers.uniswap.org/docs/protocols/v4/deployments)
 - Supplied paper: *The Protocol Fee Discount Auction*, October 2025. Section 2 defines the mechanism; Section 4's economic results are model predictions, not guarantees for this prototype.
 
-Before submission, finish the auction and swap evidence, event dashboard, demo recording, and feedback-form status.
+Before submission, finish the auction and swap evidence, demo recording, and feedback-form status.

@@ -43,6 +43,13 @@ import {
   switchToUnichainSepolia,
   type ProtocolSnapshot,
 } from './lib/testnet'
+import {
+  formatCountdown,
+  phaseDeadline,
+  readAuctionDashboard,
+  rehearsalSteps,
+  type AuctionDashboard,
+} from './lib/dashboard'
 
 type Phase = 'Schedule' | 'Commit' | 'Reveal' | 'Settle' | 'Active'
 
@@ -66,6 +73,10 @@ type ProtocolState = {
 }
 
 type TransactionState = { label: string; hash: Hex } | null
+
+type DashboardState =
+  | { status: 'idle' | 'loading' | 'empty' | 'error'; snapshot: null; message?: string }
+  | { status: 'ready'; snapshot: AuctionDashboard }
 
 const phases: { name: Phase; description: string }[] = [
   { name: 'Schedule', description: 'Terms fixed' },
@@ -110,6 +121,8 @@ function App() {
   })
   const [operatorBond, setOperatorBond] = useState('1')
   const [operatorMinimumBid, setOperatorMinimumBid] = useState('10')
+  const [dashboard, setDashboard] = useState<DashboardState>({ status: 'idle', snapshot: null })
+  const [dashboardNow, setDashboardNow] = useState(() => Date.now())
   const inputRef = useRef<HTMLInputElement>(null)
 
   const ordinary = useMemo(
@@ -125,6 +138,11 @@ function App() {
   useEffect(() => {
     void refreshProtocol()
     void refreshWallet()
+  }, [])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setDashboardNow(Date.now()), 1_000)
+    return () => window.clearInterval(timer)
   }, [])
 
   const connectedAddress = wallet.status === 'connected' ? wallet.address : null
@@ -204,6 +222,22 @@ function App() {
     } catch {
       setBidPreflight(null)
       setLiveNotice(`Auction #${liveAuctionId} is not available yet. The deployer must schedule it first.`)
+    }
+  }
+
+  async function loadDashboard(auctionId = liveAuctionId) {
+    try {
+      const id = BigInt(auctionId)
+      setDashboard({ status: 'loading', snapshot: null })
+      const nextAuctionId = await readNextAuctionId()
+      if (id === 0n || id >= nextAuctionId) {
+        setDashboard({ status: 'empty', snapshot: null, message: `Auction #${auctionId} has not been scheduled on-chain.` })
+        return
+      }
+      const snapshot = await readAuctionDashboard(id)
+      setDashboard({ status: 'ready', snapshot })
+    } catch {
+      setDashboard({ status: 'error', snapshot: null, message: 'The public RPC could not load this auction dashboard. Refresh to retry.' })
     }
   }
 
@@ -297,6 +331,7 @@ function App() {
       setTransaction({ label: action.replace('-', ' '), hash })
       setLiveNotice('Transaction confirmed on Unichain Sepolia.')
       await loadBidPreflight()
+      await loadDashboard()
     } catch (error) {
       setLiveNotice(error instanceof Error ? error.message : 'The wallet transaction could not be completed.')
     }
@@ -317,6 +352,7 @@ function App() {
       setBidPreflight(null)
       setTransaction({ label: `schedule auction #${nextAuctionId}`, hash })
       setLiveNotice(`Auction #${nextAuctionId} was scheduled. Load it to begin bidder preflight.`)
+      await loadDashboard(nextAuctionId.toString())
     } catch (error) {
       setLiveNotice(error instanceof Error ? error.message : 'The auction schedule transaction could not be completed.')
     }
@@ -332,6 +368,7 @@ function App() {
       const hash = await collectProceeds(provider, connectedAddress)
       setTransaction({ label: 'collect proceeds', hash })
       setLiveNotice('Proceeds collection confirmed on Unichain Sepolia.')
+      await loadDashboard()
     } catch (error) {
       setLiveNotice(error instanceof Error ? error.message : 'No collectible proceeds are available yet.')
     }
@@ -483,13 +520,23 @@ function App() {
         </div>
       </section>
 
+      <section className="dashboard-section" aria-label="Live auction dashboard">
+        <div className="dashboard-heading">
+          <div><p className="eyebrow">Live evidence dashboard</p><h2>The auction tape tells the story.</h2></div>
+          <div className="dashboard-load"><label htmlFor="dashboard-auction-id">Auction ID<input id="dashboard-auction-id" inputMode="numeric" min="1" onChange={(event) => { setLiveAuctionId(event.target.value); setBidPreflight(null); setLiveSecret(null); setDashboard({ status: 'idle', snapshot: null }) }} type="number" value={liveAuctionId} /></label><button className="button outline" onClick={() => loadDashboard()} type="button">{dashboard.status === 'loading' ? 'Loading…' : 'Load evidence'}</button></div>
+        </div>
+        {dashboard.status === 'ready' ? <DashboardView snapshot={dashboard.snapshot} nowSeconds={BigInt(Math.floor(dashboardNow / 1_000))} /> : (
+          <div className={`dashboard-empty ${dashboard.status}`}><span className="step-cap">{dashboard.status === 'loading' ? 'Reading Unichain Sepolia' : 'Evidence status'}</span><strong>{dashboard.status === 'loading' ? 'Loading the auction state and recent event window…' : dashboard.message ?? 'Enter an auction ID to load its live state, receipts, and rehearsal evidence.'}</strong><small>This dashboard is read-only. It indexes the most recent on-chain evidence window, not a permanent analytics service.</small></div>
+        )}
+      </section>
+
       <section className="live-control-grid" aria-label="Live bidder and operator controls">
         <article className="live-panel bidder-panel">
           <div className="panel-topline"><p className="eyebrow">Live bidder flow</p><span className="live-tag">WALLET CONFIRMED WRITES</span></div>
           <h2>Commit only what you can reveal.</h2>
           <p className="panel-copy">Each button opens your connected wallet. The app asks for exact allowance amounts; it never stores a wallet key or raw secret in local storage.</p>
           <div className="auction-load-row">
-            <label htmlFor="live-auction-id">Auction ID<input id="live-auction-id" inputMode="numeric" min="1" onChange={(event) => { setLiveAuctionId(event.target.value); setBidPreflight(null); setLiveSecret(null) }} type="number" value={liveAuctionId} /></label>
+            <label htmlFor="live-auction-id">Auction ID<input id="live-auction-id" inputMode="numeric" min="1" onChange={(event) => { setLiveAuctionId(event.target.value); setBidPreflight(null); setLiveSecret(null); setDashboard({ status: 'idle', snapshot: null }) }} type="number" value={liveAuctionId} /></label>
             <button className="button outline" onClick={loadBidPreflight} type="button">Load live auction</button>
           </div>
           {bidPreflight ? (
@@ -704,6 +751,40 @@ function FeeCard({ caption, result, tone }: { caption: string; result: ReturnTyp
   )
 }
 
+function DashboardView({ nowSeconds, snapshot }: { nowSeconds: bigint; snapshot: AuctionDashboard }) {
+  const deadline = phaseDeadline(snapshot.phase, snapshot.auction)
+  const remaining = deadline.timestamp === null ? null : deadline.timestamp - nowSeconds
+  const checklist = rehearsalSteps(snapshot.activity)
+  return (
+    <div className="dashboard-content">
+      <div className="dashboard-state-grid">
+        <article className="phase-card">
+          <span className="step-cap">Auction #{snapshot.auctionId.toString()} · live phase</span>
+          <strong>{phaseLabel(snapshot.phase)}</strong>
+          <div>{deadline.label}<b>{remaining === null ? '—' : formatCountdown(remaining)}</b></div>
+          {deadline.timestamp !== null && <small>{formatTimestamp(deadline.timestamp)} UTC</small>}
+        </article>
+        <article className="state-metric"><span>Commitments</span><strong>{snapshot.auction.commitments.toString()}</strong><small>hashes recorded</small></article>
+        <article className="state-metric"><span>Reveals</span><strong>{snapshot.auction.reveals.toString()}</strong><small>funded bids</small></article>
+        <article className="state-metric"><span>Winner / right</span><strong>{snapshot.auction.winner === '0x0000000000000000000000000000000000000000' ? '—' : shortAddress(snapshot.auction.winner)}</strong><small>{snapshot.auction.cancelled ? 'cancelled' : snapshot.auction.finalized ? 'finalized' : 'not finalized'}</small></article>
+        <article className="state-metric"><span>Winning bid</span><strong>{formatUsdc(snapshot.auction.winningBid)}</strong><small>first-price outcome</small></article>
+        <article className="state-metric"><span>Treasury credit</span><strong>{formatUsdc(snapshot.treasuryCredit)}</strong><small>awaiting collection</small></article>
+        <article className="state-metric"><span>Refunds available</span><strong>{formatUsdc(snapshot.totalRefundable)}</strong><small>pull claims outstanding</small></article>
+      </div>
+      <div className="evidence-grid">
+        <article className="activity-panel">
+          <div className="activity-panel-head"><div><p className="eyebrow">Recent on-chain tape</p><h3>{snapshot.activity.length} receipt{snapshot.activity.length === 1 ? '' : 's'}</h3></div><span>blocks {snapshot.windowStartBlock.toString()}–{snapshot.blockNumber.toString()}</span></div>
+          {snapshot.activity.length === 0 ? <div className="no-activity">No PFDA activity is recorded for this auction in the current evidence window. Schedule it, then refresh after each confirmed transaction.</div> : <ol className="activity-tape">{snapshot.activity.map((item) => <li className={item.kind} key={`${item.transactionHash}-${item.logIndex}`}><i /><div><strong>{item.title}</strong><p>{item.detail}</p></div><a href={explorerTransaction(item.transactionHash)} rel="noreferrer" target="_blank">block {item.blockNumber.toString()} ↗</a></li>)}</ol>}
+        </article>
+        <aside className="rehearsal-panel">
+          <p className="eyebrow">Two-bidder rehearsal</p><h3>Evidence, not assertions.</h3><ol>{checklist.map((step) => <li className={step.complete ? 'complete' : ''} key={step.label}><i>{step.complete ? '✓' : '○'}</i><div><strong>{step.label}</strong><small>{step.detail}</small></div></li>)}</ol>
+          <p className="rehearsal-note">A completed row is derived from visible event receipts. Open each linked transaction before recording the demo.</p>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
 function NumberField({ label, onChange, value }: { label: string; onChange: (value: number) => void; value: number }) {
   const id = `operator-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
   return (
@@ -720,6 +801,12 @@ function phaseLabel(phase: number): string {
 
 function formatUsdc(value: bigint): string {
   return `${formatUnits(value, 6)} MockUSDC`
+}
+
+function formatTimestamp(timestamp: bigint): string {
+  return new Date(Number(timestamp) * 1_000).toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC',
+  })
 }
 
 function normalizedBid(value: string): string {

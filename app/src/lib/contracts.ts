@@ -11,6 +11,8 @@ const scheduleComponents = [
 
 export const auctionAbi = [
   { type: 'function', name: 'nextAuctionId', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  { type: 'function', name: 'totalRefundable', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  { type: 'function', name: 'treasuryCredit', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
   {
     type: 'function', name: 'getAuction', stateMutability: 'view', inputs: [{ name: 'id', type: 'uint256' }],
     outputs: [{
@@ -34,6 +36,26 @@ export const auctionAbi = [
       { name: 'bond', type: 'uint128' }, { name: 'minimumBid', type: 'uint128' },
     ], outputs: [{ name: 'id', type: 'uint256' }],
   },
+  {
+    type: 'event', name: 'AuctionCreated', inputs: [
+      { name: 'auctionId', type: 'uint256', indexed: true }, { name: 'poolId', type: 'bytes32', indexed: true },
+      { name: 'schedule', type: 'tuple', components: scheduleComponents, indexed: false },
+      { name: 'bond', type: 'uint128', indexed: false }, { name: 'minimumBid', type: 'uint128', indexed: false },
+    ],
+  },
+  { type: 'event', name: 'BidCommitted', inputs: [{ name: 'auctionId', type: 'uint256', indexed: true }, { name: 'bidder', type: 'address', indexed: true }, { name: 'commitment', type: 'bytes32', indexed: false }, { name: 'order', type: 'uint256', indexed: false }] },
+  { type: 'event', name: 'BidRevealed', inputs: [{ name: 'auctionId', type: 'uint256', indexed: true }, { name: 'bidder', type: 'address', indexed: true }, { name: 'amount', type: 'uint128', indexed: false }] },
+  { type: 'event', name: 'AuctionFinalized', inputs: [{ name: 'auctionId', type: 'uint256', indexed: true }, { name: 'winner', type: 'address', indexed: true }, { name: 'winningBid', type: 'uint128', indexed: false }, { name: 'cancelled', type: 'bool', indexed: false }, { name: 'forfeitedBonds', type: 'uint256', indexed: false }] },
+  { type: 'event', name: 'RefundWithdrawn', inputs: [{ name: 'auctionId', type: 'uint256', indexed: true }, { name: 'bidder', type: 'address', indexed: true }, { name: 'amount', type: 'uint256', indexed: false }] },
+  { type: 'event', name: 'ProceedsCollected', inputs: [{ name: 'recipient', type: 'address', indexed: true }, { name: 'amount', type: 'uint256', indexed: false }] },
+] as const
+
+export const executorEventAbi = [
+  { type: 'event', name: 'SwapExecuted', inputs: [{ name: 'auctionId', type: 'uint256', indexed: true }, { name: 'bidder', type: 'address', indexed: true }, { name: 'poolId', type: 'bytes32', indexed: true }, { name: 'discounted', type: 'bool', indexed: false }, { name: 'output', type: 'uint256', indexed: false }] },
+] as const
+
+export const hookEventAbi = [
+  { type: 'event', name: 'SurchargeCollected', inputs: [{ name: 'poolId', type: 'bytes32', indexed: true }, { name: 'executor', type: 'address', indexed: true }, { name: 'currency', type: 'address', indexed: true }, { name: 'amount', type: 'uint256', indexed: false }] },
 ] as const
 
 const erc20Abi = [

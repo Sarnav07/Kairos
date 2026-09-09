@@ -81,3 +81,10 @@
 - Added a browser-only AES-256-GCM/PBKDF2 secret vault. Records bind their ciphertext to the existing domain-bound secret, require a 12-character password, keep that password out of storage, and reject a decrypted secret for a different connected wallet.
 - Added a separate immutable-deployer-gated operator panel. It fixes the deployed KRA/KRB pool, validates positive whole-minute windows and enforces at least a 30-minute post-reveal activation delay before a wallet can create an auction. It also exposes proceeds collection.
 - Added 4 focused frontend tests for encrypted vault recovery/tamper isolation and schedule/USDC validation, bringing the frontend suite to 12 tests. No live auction was created during implementation; every state-changing path remains a button click plus wallet confirmation.
+
+## Chunk 11: live auction dashboard and rehearsal evidence
+
+- Added a read-only dashboard for a chosen on-chain auction ID. It shows phase and the next fixed deadline countdown, commitment/reveal counts, winner/right state, winning bid, treasury credit and outstanding refunds.
+- Added a transaction-linked activity tape for auction lifecycle events, executor swaps and pool surcharge receipts. The RPC reader uses a bounded recent block window; no permanent indexer or unverified historical claim is implied.
+- Added a two-bidder rehearsal checklist derived solely from visible receipts: schedule, two commits, two reveals, finalization/refund/proceeds, plus discounted and ordinary executor swaps.
+- Added deterministic dashboard tests for phase deadlines, countdowns and evidence gating, bringing the frontend suite to 14 tests. No live auction or rehearsal transaction was created during this chunk.

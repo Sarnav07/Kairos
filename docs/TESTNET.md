@@ -86,3 +86,5 @@ The final testnet rehearsal needs two funded bidder wallets and a pre-initialize
 4. A winner swap through PFDAExecutor while the right is active, plus an ordinary swap comparison.
 
 The contracts are deployed, but this public rehearsal has not yet been run. The existing integration suite remains the end-to-end proof until the listed auction and swap transactions are completed and recorded.
+
+After each confirmed rehearsal transaction, load the auction ID in the app's read-only evidence dashboard and retain its explorer link. The dashboard derives its checklist from recent on-chain logs; it does not create a schedule, submit a transaction, or replace the permanent submission evidence record.

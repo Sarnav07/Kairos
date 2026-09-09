@@ -27,6 +27,8 @@ Replace this segment with a real Unichain Sepolia explorer walkthrough:
 3. Finalization, loser refund, and proceeds received by the deployer wallet.
 4. Winner swap via PFDAExecutor and an ordinary comparison swap.
 
+Before opening individual explorer pages, load the same auction ID in the app's **Live evidence dashboard**. It should show the phase and fixed deadline, event tape, treasury/refund state, and check off rehearsal rows only when the corresponding receipts are visible. The dashboard is a bounded recent-RPC view, so keep the auction and recording within the evidence window.
+
 Keep each explorer URL visible long enough to read and add it to the showcase description.
 
 ## 2:40–3:00 — Limitations and next step
