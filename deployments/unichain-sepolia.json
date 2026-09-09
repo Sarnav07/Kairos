@@ -39,5 +39,40 @@
     "hookEligibilityMatchesPFDAExecutor": true,
     "hookRecipientMatchesDeployer": true,
     "hookSurchargePpm": 500
+  },
+  "poolBootstrap": {
+    "blockNumber": 62101827,
+    "poolId": "0x34626ba06dcca06958a701102c32034d3e0f035d9ea1629ec803e3cc8a093d4d",
+    "lpFeePpm": 2500,
+    "tickSpacing": 60,
+    "hook": "0xBeE0b2606fdb9b70Ca3FB24254B674423f1e40c8",
+    "liquidityRouter": {
+      "address": "0x74e9DD3a0B680C14ff91000C40B840B9B4741f44",
+      "deploymentTransaction": "0x312c61e59cbdf31f707ae8999fabcb6916402cb5a9422cf7d0d3414e18b965e8",
+      "liquidityTransaction": "0xbcb63c1e630e11597489dfc5b0d407e25862cfb3552dbb2df6512462f191894d"
+    },
+    "tokens": {
+      "kairosAlpha": {
+        "address": "0x99AA7178Df76ef8b21A1Bf71CB33CF02D8E7C8E0",
+        "symbol": "KRA",
+        "decimals": 18,
+        "deploymentTransaction": "0x9c69dc5bfdcfe143e8d5a580b5d3aad170c84ec57c09e5ad9f6aa6f52e81903a"
+      },
+      "kairosBeta": {
+        "address": "0xd1a8f94E0c330FD0f8b19De9b6F586300a83538C",
+        "symbol": "KRB",
+        "decimals": 18,
+        "deploymentTransaction": "0xf3cebae88dfaff85e44d59fe168ac5cfa9a6ca1dafd93bb3ea67b11c09135a86"
+      }
+    },
+    "poolInitializationTransaction": "0xe98738897c5f753b57aca3cad109c20f7d6964cadf38b5ddc738013bd7065280",
+    "verification": {
+      "allReceiptsSucceeded": true,
+      "tokenMetadataMatches": true,
+      "tokenBytecodePresent": true,
+      "routerBytecodePresent": true,
+      "poolManagerHoldsSeededKRA": true,
+      "poolManagerHoldsSeededKRB": true
+    }
   }
 }

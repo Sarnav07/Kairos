@@ -61,3 +61,10 @@
 - Added `tools/verify-clean-checkout.sh`, which clones the current repository with submodules into a temporary directory and runs both contract and frontend gates without mutating the working checkout.
 - `FEEDBACK.md` now records the actual submission state. No public remote, testnet evidence, demo video, or feedback-form submission is claimed. These remain explicit release blockers rather than substituted local assertions.
 - Fresh-checkout verification completed on 2026-09-08: recursive submodules initialized from pinned commits; Foundry formatting/build and all 72 tests passed; a clean `npm ci` then frontend lint, 3 tests and production build passed. The temporary checkout was removed after the run.
+
+## Chunk 7: pool bootstrap and rehearsal runner
+
+- Added permissionlessly mintable, explicitly valueless `KRA` and `KRB` demo trade tokens and a Unichain Sepolia bootstrap script. The script validates the deployed auction/executor/hook wiring, deploys the token pair and the pinned v4-core test liquidity router, initializes the ordered hook pool at a 1:1 price, and adds concentrated demo liquidity.
+- Added a separate scheduling script. It does not contain bidder secrets and does not run automatically; its timing, bid bond and reserve are explicit local configuration that must be reviewed before a public rehearsal.
+- Added a real-v4 bootstrap test covering sorted currencies, hook pool initialization, liquidity settlement and the immutable relationship between manager, auction, executor and hook. Local verification is 74 passing tests.
+- Broadcast and independently verified the KRA/KRB hook pool in Unichain Sepolia block `62101827`. The public manifest records every contract address and core transaction hash; RPC checks confirmed token metadata, contract bytecode, successful receipts and nonzero seeded token balances at the PoolManager. No auction has been scheduled yet.

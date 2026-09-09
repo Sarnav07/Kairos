@@ -51,6 +51,31 @@ All deployment transactions succeeded in Unichain Sepolia block `62101285`. The 
 
 The verified auction proceeds recipient and hook surcharge recipient are both `0x54560095593B57Ad71572336037435Ff1E50E4EA`. The verified hook surcharge is `500` PPM (5 bp).
 
+## Pool bootstrap
+
+The bootstrap script deploys two permissionlessly mintable, valueless 18-decimal tokens (`KRA` and `KRB`), initializes a 25 bp / 60-tick v4 pool at a 1:1 starting price with the deployed PFDA hook, and adds concentrated demo liquidity. It uses the pinned `v4-core` test liquidity router only to settle this testnet demo position; that router is not a production routing component. It validates the signer and every dependency’s immutable wiring before broadcasting, and does not create an auction.
+
+```sh
+set -a
+source .env
+set +a
+forge script script/BootstrapPFDAPool.s.sol:BootstrapPFDAPool \
+  --rpc-url "$RPC_URL" \
+  --broadcast \
+  -vvvv
+```
+
+Copy the emitted `poolId` into local `PFDA_POOL_ID` only after checking the resulting token, router and pool state. Then use `SchedulePFDAAuction.s.sol` to create an explicit auction; its default schedule begins committing five minutes after the scheduling block, allows 20 minutes to commit and reveal each, waits 35 minutes before activation, and gives a 30-minute right. Review or override those local timing values before broadcast.
+
+The first pool bootstrap succeeded in Unichain Sepolia block `62101827`:
+
+- KRA: `0x99AA7178Df76ef8b21A1Bf71CB33CF02D8E7C8E0`
+- KRB: `0xd1a8f94E0c330FD0f8b19De9b6F586300a83538C`
+- Liquidity router: `0x74e9DD3a0B680C14ff91000C40B840B9B4741f44`
+- Pool ID: `0x34626ba06dcca06958a701102c32034d3e0f035d9ea1629ec803e3cc8a093d4d`
+
+The [deployment manifest](../deployments/unichain-sepolia.json) includes the deployment, initialization and liquidity transaction hashes. RPC verification confirmed token metadata, bytecode at every bootstrap contract, and nonzero KRA/KRB balances at the PoolManager. No auction has been scheduled yet.
+
 ## Rehearsal record to collect
 
 The final testnet rehearsal needs two funded bidder wallets and a pre-initialized ERC-20/ ERC-20 pool using the deployed PFDA hook. Record transaction links for:

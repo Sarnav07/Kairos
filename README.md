@@ -4,7 +4,7 @@ ETHOnline 2026 Start Fresh prototype of the Protocol Fee Discount Auction descri
 
 ## Status
 
-Chunks 0–5 are complete. The PFDA contracts are deployed and independently verified on Unichain Sepolia. MockUSDC funds bids and the deploying wallet receives proceeds. The remaining live-demo work is pool bootstrapping, auction scheduling and the two-bidder rehearsal.
+Chunks 0–7 are complete. The PFDA contracts and a hook-enabled KRA/KRB demonstration pool are deployed and independently verified on Unichain Sepolia. MockUSDC funds bids and the deploying wallet receives proceeds. The remaining live-demo work is wallet flows, deliberate auction scheduling, and the two-bidder rehearsal.
 
 ## Agreed scope
 
