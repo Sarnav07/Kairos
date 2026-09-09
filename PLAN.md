@@ -47,3 +47,52 @@ Keep winner/validity queries independent of the auction implementation where pra
 - GitHub remote URL from the user; local commits can proceed before this arrives.
 - Deployment signer via local wallet/keystore and testnet gas when deployment begins. Never request private keys in chat.
 - User completes account-bound hackathon/feedback submission steps, with prepared content and links.
+
+## Product expansion roadmap
+
+The original six chunks establish the locally verified MVP and submission package. The following chunks cover every approved product feature. Each one has its own tests, documentation update, review gate, and local commit. A later chunk cannot claim live evidence until the earlier deployment gate has actually completed.
+
+### Critical path for the September 14 submission
+
+With the September 14 deadline, the credible hackathon path is chunks 7–11 plus the final evidence update: live testnet infrastructure, wallet flows, operator flow, event dashboard, and a recorded two-bidder rehearsal. Permit abstraction and Harberger leasing are post-submission work because they change financial authorization and rights-allocation semantics and need separate review. The local simulator remains available if an external testnet dependency fails.
+
+| Chunk | Scope | Core deliverable | Acceptance gate | Commit intent |
+| --- | --- | --- | --- | --- |
+| 7 | Testnet bootstrap | Deployable mock trade pair, pool initializer/liquidity seeder, auction schedule helper, deployment manifest schema | Local real-v4 bootstrap test; all addresses/config validated; no fabricated manifest | `feat: add testnet pool bootstrap` |
+| 8 | Wallet runtime | Unichain Sepolia connection, network guard, address registry, read-only contract client and explorer links | UI build; address/chain validation unit tests; disconnected and wrong-network states | `feat: add Unichain wallet runtime` |
+| 9 | Bidder flow + vault | Allowance, commit, reveal and refund transactions; AES-GCM secret vault/export/recovery; deadline/balance checks | Browser/domain tests; contract-flow tests; no secret or key sent to analytics/logs | `feat: add secure bidder workflow` |
+| 10 | Operator flow | Deployer-only schedule form, pool/auction configuration validation, proceeds collection and receipts | Permission/read-only tests; contract simulation tests; deployer mismatch is blocked in UI | `feat: add auction operator controls` |
+| 11 | Dashboard + evidence | Event-log feed, live auction state, countdowns, fee/swap receipts, two-bidder rehearsal checklist | Indexed-log fixtures; loading/error states; testnet rehearsal transcript once broadcast | `feat: add live auction dashboard` |
+| 12 | Submission evidence update | Verified addresses, transaction links, public repository, demo recording, feedback-form status | Every link manually resolves; fresh checkout still green | `docs: record verified demo evidence` |
+
+### Full roadmap after the live demo
+
+| Chunk | Scope | Core deliverable | Acceptance gate | Commit intent |
+| --- | --- | --- | --- | --- |
+| 13 | Auction-value calculator | Editable volume, expected share, surcharge, bid and gas assumptions with break-even output and sensitivity table | Deterministic arithmetic tests; inputs/units/assumptions visible; never presented as a price quote | `feat: add auction value calculator` |
+| 14 | Permit authorization | ERC-2612 permit path where the bid token supports it, and/or Permit2 adapter with explicit token/chain checks | Signature expiry/nonce/replay/failure tests; standard approval remains fallback; threat-model update | `feat: add permit-based bid approvals` |
+| 15 | Harberger design | Written lease specification: valuation, rent interval, grace period, liquidation, takeover, refund and rights transition rules | Economic/security review before any Solidity implementation; user approval of rules | `docs: specify Harberger fee lease` |
+| 16 | Harberger implementation | Isolated lease contract/adapter, rent settlement, takeover and executor eligibility integration | Stateful invariants for solvency and transitions; fuzz tests; local live-flow demo; independent review | `feat: add Harberger fee lease` |
+| 17 | Production hardening | Event-indexing backend option, monitoring, pausing/incident policy if introduced, security review and deployment operations | Threat model, repeatable release procedure, testnet soak run and external audit plan | `docs: prepare production hardening` |
+
+### Feature-to-chunk mapping
+
+| Requested feature | Primary chunk | Depends on |
+| --- | --- | --- |
+| Real wallet + testnet mode | 8–9 | 7 |
+| Pool bootstrap and rehearsal runner | 7 and 11 | funded testnet signer for public evidence |
+| Auction dashboard | 11 | 8 |
+| Bid-secret vault | 9 | 8 |
+| Auction-value calculator | 13 | none; can run in parallel after the hackathon critical path |
+| Deployer controls | 10 | 7–8 |
+| Event-based analytics | 11, then 17 for a hosted indexer | 8 |
+| Permit-based approvals | 14 | stable bidder flow and a clear token standard |
+| Harberger lease | 15–16 | all MVP/testnet gates complete |
+
+### Operating rules for the expansion
+
+- Keep contract configuration immutable per auction. Changes to a fee, recipient, pool, or schedule require a new auction rather than a mutable admin control.
+- Test a complete local v4 path before every testnet broadcast. Broadcast only with a locally configured, funded signer; never paste private keys into chat or commits.
+- Write an address/transaction manifest only after manually verifying the chain, bytecode and transaction receipts.
+- Preserve ordinary ERC-20 approval as the fallback until permit paths are tested against the exact bid-token standard and target chain.
+- Do not begin Harberger Solidity work until the written mechanics have been reviewed and approved; it is a materially different financial product from the sealed auction.
