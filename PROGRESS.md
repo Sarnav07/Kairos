@@ -94,3 +94,9 @@
 - Added a canonical [public evidence register](docs/EVIDENCE.md) with the deployed Unichain Sepolia stack, pool bootstrap receipts, repository and public feedback-file links. It separates those verified links from the intentionally pending auction rehearsal, video and account-bound feedback form.
 - Added `tools/verify-submission-evidence.sh`, which checks the evidence manifest invariants, configured GitHub remote, public feedback URL and each currently listed public receipt. It fails if a pending item is silently represented as complete.
 - Corrected the stale feedback-file remote statement and updated the judge path and release gate. The script does not submit forms or create transactions; unresolved rehearsal, video and feedback-form evidence remains plainly pending.
+
+## Chunk 13: auction-value calculator
+
+- Added an editable bid worksheet that makes pool-volume, captured-share, surcharge, sealed-bid and gas assumptions visible. It calculates eligible volume, waived-surcharge savings, all-in cost, modelled net value, break-even eligible flow and implied pool volume.
+- Added a deterministic half/expected/double-volume sensitivity strip and explicitly labels the calculation as an assumption model rather than a price quote, forecast, execution estimate or guarantee.
+- Added focused arithmetic tests for the core formula, unavailable break-even cases, and sensitivity construction, bringing the frontend suite to 17 tests. No wallet action, testnet transaction, or auction claim is created by this feature.

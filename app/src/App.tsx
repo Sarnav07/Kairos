@@ -50,6 +50,7 @@ import {
   rehearsalSteps,
   type AuctionDashboard,
 } from './lib/dashboard'
+import { calculateAuctionValue, sensitivityEstimates } from './lib/value'
 
 type Phase = 'Schedule' | 'Commit' | 'Reveal' | 'Settle' | 'Active'
 
@@ -121,6 +122,11 @@ function App() {
   })
   const [operatorBond, setOperatorBond] = useState('1')
   const [operatorMinimumBid, setOperatorMinimumBid] = useState('10')
+  const [poolVolumeUsdc, setPoolVolumeUsdc] = useState('500000')
+  const [captureSharePercent, setCaptureSharePercent] = useState('30')
+  const [surchargeBasisPoints, setSurchargeBasisPoints] = useState('5')
+  const [valueBidUsdc, setValueBidUsdc] = useState('50')
+  const [gasUsdc, setGasUsdc] = useState('8')
   const [dashboard, setDashboard] = useState<DashboardState>({ status: 'idle', snapshot: null })
   const [dashboardNow, setDashboardNow] = useState(() => Date.now())
   const inputRef = useRef<HTMLInputElement>(null)
@@ -133,6 +139,15 @@ function App() {
     () => simulateTrade({ grossInputUsdc: Number(grossInput), lpFeePpm: 2_500, surchargePpm: 500 }, true),
     [grossInput],
   )
+  const auctionValueInput = useMemo(() => ({
+    poolVolumeUsdc: inputNumber(poolVolumeUsdc),
+    captureSharePercent: inputNumber(captureSharePercent),
+    surchargeBasisPoints: inputNumber(surchargeBasisPoints),
+    bidUsdc: inputNumber(valueBidUsdc),
+    gasUsdc: inputNumber(gasUsdc),
+  }), [captureSharePercent, gasUsdc, poolVolumeUsdc, surchargeBasisPoints, valueBidUsdc])
+  const auctionValue = useMemo(() => calculateAuctionValue(auctionValueInput), [auctionValueInput])
+  const valueSensitivity = useMemo(() => sensitivityEstimates(auctionValueInput), [auctionValueInput])
   const phase = phases[phaseIndex]
 
   useEffect(() => {
@@ -712,6 +727,27 @@ function App() {
         <p className="model-footnote">Both paths retain the 25 bp LP fee. The model does not include price impact, routing, gas, native protocol fees, or token-transfer edge cases.</p>
       </section>
 
+      <section className="value-section" aria-labelledby="value-title">
+        <div className="value-heading"><div><p className="eyebrow">Bid worksheet</p><h2 id="value-title">Does the right clear its own price?</h2><p>Estimate the app-surcharge savings you could actually capture during the fixed window, then subtract a first-price bid and gas.</p></div><span>ASSUMPTION MODEL · NOT A QUOTE</span></div>
+        <div className="value-grid">
+          <div className="value-inputs">
+            <ValueField label="Pool volume in right window" suffix="USDC" value={poolVolumeUsdc} onChange={setPoolVolumeUsdc} />
+            <ValueField label="Your expected capture" suffix="%" value={captureSharePercent} onChange={setCaptureSharePercent} />
+            <ValueField label="App surcharge waived" suffix="bp" value={surchargeBasisPoints} onChange={setSurchargeBasisPoints} />
+            <ValueField label="Your sealed bid" suffix="MockUSDC" value={valueBidUsdc} onChange={setValueBidUsdc} />
+            <ValueField label="Estimated gas" suffix="USDC" value={gasUsdc} onChange={setGasUsdc} />
+          </div>
+          <article className={`value-verdict ${auctionValue.netValueUsdc >= 0 ? 'positive' : 'negative'}`}>
+            <span className="step-cap">Modelled net value</span><strong>{auctionValue.netValueUsdc >= 0 ? '+' : '−'}{displayUsdc(Math.abs(auctionValue.netValueUsdc))} <em>USDC</em></strong>
+            <p>{auctionValue.netValueUsdc >= 0 ? 'Expected surcharge savings exceed the entered bid and gas.' : 'The entered bid and gas exceed expected surcharge savings.'}</p>
+            <dl><div><dt>Eligible volume captured</dt><dd>{displayUsdc(auctionValue.eligibleVolumeUsdc)} USDC</dd></div><div><dt>App-surcharge savings</dt><dd>{displayUsdc(auctionValue.surchargeSavingsUsdc)} USDC</dd></div><div><dt>Bid + gas</dt><dd>{displayUsdc(auctionValue.allInCostUsdc)} USDC</dd></div></dl>
+          </article>
+          <article className="break-even-card"><span className="step-cap">Break-even line</span><strong>{auctionValue.breakEvenPoolVolumeUsdc === null ? '—' : `${displayUsdc(auctionValue.breakEvenPoolVolumeUsdc)} USDC`}</strong><p>Pool volume needed at your capture share to cover bid + gas.</p><small>{auctionValue.breakEvenEligibleVolumeUsdc === null ? 'A positive surcharge rate is required.' : `${displayUsdc(auctionValue.breakEvenEligibleVolumeUsdc)} USDC of your own eligible flow is required.`}</small></article>
+        </div>
+        <div className="sensitivity-strip"><div><span className="step-cap">Volume sensitivity</span><small>Only pool volume moves. Capture share, surcharge, bid, and gas remain fixed.</small></div><div className="sensitivity-cases">{valueSensitivity.map((item) => <div className={item.estimate.netValueUsdc >= 0 ? 'upside' : 'downside'} key={item.label}><span>{item.label}</span><strong>{item.estimate.netValueUsdc >= 0 ? '+' : '−'}{displayUsdc(Math.abs(item.estimate.netValueUsdc))} USDC</strong><small>{displayUsdc(item.estimate.eligibleVolumeUsdc)} eligible volume</small></div>)}</div></div>
+        <p className="value-footnote">This is an editable arithmetic scenario, not financial advice, an execution quote, a prediction of volume, or a guarantee that you win, can route the assumed share, or receive a surcharge waiver outside the active right.</p>
+      </section>
+
       <section className="deployment-section">
         <div>
           <p className="eyebrow">Live testnet runtime</p>
@@ -749,6 +785,11 @@ function FeeCard({ caption, result, tone }: { caption: string; result: ReturnTyp
       </dl>
     </article>
   )
+}
+
+function ValueField({ label, onChange, suffix, value }: { label: string; onChange: (value: string) => void; suffix: string; value: string }) {
+  const id = `value-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+  return <label htmlFor={id}><span>{label}</span><div><input id={id} inputMode="decimal" min="0" onChange={(event) => onChange(event.target.value)} type="number" value={value} /><b>{suffix}</b></div></label>
 }
 
 function DashboardView({ nowSeconds, snapshot }: { nowSeconds: bigint; snapshot: AuctionDashboard }) {
@@ -815,6 +856,11 @@ function normalizedBid(value: string): string {
     throw new Error('Invalid bid')
   }
   return value
+}
+
+function inputNumber(value: string): number {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : 0
 }
 
 function shortHash(value: string): string {

@@ -24,7 +24,7 @@ The prototype does not claim to waive native Uniswap protocol fees, all swap fee
 | `FEEDBACK.md` in the public repository | Ready | [Public FEEDBACK.md](https://github.com/Sarnav07/Kairos/blob/main/FEEDBACK.md) contains actual implementation observations. |
 | Feedback form submitted with public `FEEDBACK.md` link | Pending user account action | Submit [Uniswap Developer Feedback Form](https://developers.uniswap.org/hackathon-feedback) with the resolved public URL. |
 | README links to relevant contracts and lines | Ready locally | See the code map in [README](../README.md). |
-| Demonstrable application | Ready; rehearsal pending | React workstation with live wallet-confirmed bidder and immutable-deployer controls, encrypted local bid vault, read-only event dashboard, 14 frontend tests and 74 passing Solidity tests. |
+| Demonstrable application | Ready; rehearsal pending | React workstation with live wallet-confirmed bidder and immutable-deployer controls, encrypted local bid vault, read-only event dashboard and assumption-labelled bid worksheet, 17 frontend tests and 74 passing Solidity tests. |
 | Verified testnet contract and pool addresses | Ready; auction rehearsal pending | See the [public evidence register](EVIDENCE.md), [deployment manifest](../deployments/unichain-sepolia.json), and [TESTNET.md](TESTNET.md). |
 | Demo video | Pending recording | Record the script in [DEMO.md](DEMO.md) and publish its URL in the project showcase. |
 

@@ -4,6 +4,7 @@
 
 - This is an application-level surcharge waiver, not a native Uniswap protocol-fee waiver and not a waiver of LP fees.
 - The supplied paper’s welfare, LP-return and competition results are model predictions; this repository does not reproduce or guarantee them.
+- The bid worksheet is a transparent arithmetic scenario, not financial advice or a price/execution quote. It does not model price impact, slippage, route competition, auction loss, failed transactions, changing gas costs, or whether a bidder can capture the chosen share of flow.
 - The auction has a fixed commitment bond rather than bid-sized collateral at commit. A bidder can strategically avoid revelation by sacrificing that bond.
 - Activation delay can reduce some exclusion incentives but does not guarantee censorship resistance or fair transaction ordering.
 - Harberger leasing is deliberately deferred; there is no renewal, rent, takeover, or solvency system.
