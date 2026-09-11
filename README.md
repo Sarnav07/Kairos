@@ -4,7 +4,7 @@ ETHOnline 2026 Start Fresh prototype of the Protocol Fee Discount Auction descri
 
 ## Status
 
-Chunks 0–14 are complete in source. The PFDA contracts and a hook-enabled KRA/KRB demonstration pool are deployed and independently verified on Unichain Sepolia. The workstation connects to Unichain Sepolia wallets, verifies live wiring, supplies bidder approval/commit/reveal/refund controls, and keeps bid recovery records encrypted locally. The immutable deploying wallet alone can schedule a fixed auction or collect proceeds. A read-only dashboard shows live phase/countdowns, state, event receipts and a two-bidder rehearsal checklist. An editable bid worksheet makes the surcharge-savings assumptions, all-in bid cost, break-even flow and volume sensitivity explicit; it is arithmetic, not a quote or forecast. The source now supports exact, expiring ERC-2612 authorizations when both the bid token and auction are redeployed with that capability; the currently verified deployment honestly retains standard ERC-20 approval. The public infrastructure evidence register now verifies the repository and deployed receipts; the remaining external work is the real auction rehearsal, its recording, and the account-bound feedback submission.
+Chunks 0–15 are complete in source. The PFDA contracts and a hook-enabled KRA/KRB demonstration pool are deployed and independently verified on Unichain Sepolia. The workstation connects to Unichain Sepolia wallets, verifies live wiring, supplies bidder approval/commit/reveal/refund controls, and keeps bid recovery records encrypted locally. The immutable deploying wallet alone can schedule a fixed auction or collect proceeds. A read-only dashboard shows live phase/countdowns, state, event receipts and a two-bidder rehearsal checklist. An editable bid worksheet makes the surcharge-savings assumptions, all-in bid cost, break-even flow and volume sensitivity explicit; it is arithmetic, not a quote or forecast. The source now supports exact, expiring ERC-2612 authorizations when both the bid token and auction are redeployed with that capability; the currently verified deployment honestly retains standard ERC-20 approval. A proposed [Harberger lease specification](docs/HARBERGER.md) now defines the separate future mode but requires explicit approval before any Solidity implementation or deployment. The public infrastructure evidence register now verifies the repository and deployed receipts; the remaining external work is the real auction rehearsal, its recording, and the account-bound feedback submission.
 
 ## Agreed scope
 
@@ -13,7 +13,7 @@ Chunks 0–14 are complete in source. The PFDA contracts and a hook-enabled KRA/
 - MockUSDC ERC-20 bids; mock tokens have no monetary value.
 - Auction proceeds go to the deploying wallet, derived from the deployment signer.
 - Full waiver of the auctionable fee component; preserve the LP fee rate.
-- Harberger leasing is a stretch goal after the complete MVP passes verification.
+- Harberger leasing is a separate, approval-gated future mode; see [HARBERGER.md](docs/HARBERGER.md).
 
 ## Fee fidelity
 

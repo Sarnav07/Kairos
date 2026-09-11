@@ -106,3 +106,9 @@
 - Extended source MockUSDC with ERC-2612 and added `commitWithPermit`/`revealWithPermit` to PFDAAuction. Each signature authorizes only the fixed bond or exact bid for the immutable auction, expires after 15 minutes in the workstation, and is consumed by the matching deposit. The contract tolerates a separately submitted permit when the matching exact allowance is already present.
 - Added a wallet-side capability probe for the token `nonces`/domain plus auction authorization version. It enables permit actions only when both contracts support the exact path; standard approval is deliberately retained as the fallback for smart-contract wallets, unsupported tokens, and the currently deployed public pair.
 - Added permit nonce/replay/expiry tests, an end-to-end permit lifecycle test, pre-submitted-permit handling, and a typed-data request test. The source/test gate does not redeploy or claim a live permit rehearsal. Full verification now covers 18 frontend tests and 78 Solidity tests.
+
+## Chunk 15: Harberger lease design
+
+- Added [HARBERGER.md](docs/HARBERGER.md), a proposed lease specification for the application-surcharge right. It defines immutable terms, continuous pro-rata rent with rounding carry, solvency-derived rights, cure-only grace, pull-based rent/refund/takeover credits, voluntary release, solvent takeovers, liquidation, and an isolated executor right-source interface.
+- The design explicitly leaves allocation mode and testnet economic parameters for owner approval. It does not add Solidity lease code, modify the deployed stack, create a transaction, or claim a live leased right.
+- Added tools/verify-harberger-spec.sh to check that the required economic, security, integration, test, and approval sections remain present before implementation begins.

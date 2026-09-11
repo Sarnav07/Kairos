@@ -89,6 +89,10 @@ With the September 14 deadline, the credible hackathon path is chunks 7–11 plu
 | Permit-based approvals | 14 | stable bidder flow and a clear token standard |
 | Harberger lease | 15–16 | all MVP/testnet gates complete |
 
+### Chunk 15 design result
+
+The proposed mechanics, economic boundaries, accounting invariant, lease lifecycle, executor integration, test requirements, and owner approval gate are in [docs/HARBERGER.md](docs/HARBERGER.md). This records a reviewable design only. Do not begin Chunk 16 until the five explicit decisions in that document are approved.
+
 ### Operating rules for the expansion
 
 - Keep contract configuration immutable per auction. Changes to a fee, recipient, pool, or schedule require a new auction rather than a mutable admin control.
