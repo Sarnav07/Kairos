@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {PoolId} from "v4-core/src/types/PoolId.sol";
@@ -143,6 +144,25 @@ contract PFDAAuction is ReentrancyGuard {
     }
 
     function commit(uint256 id, bytes32 commitment) external nonReentrant {
+        _commit(id, commitment);
+    }
+
+    /// @notice Uses an exact ERC-2612 permit for the commitment bond, then immediately consumes it.
+    /// @dev Keeps ordinary `commit` available for smart-contract wallets and non-permit bid tokens.
+    function commitWithPermit(
+        uint256 id,
+        bytes32 commitment,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external nonReentrant {
+        Auction storage auction = _auction(id);
+        _tryPermit(msg.sender, auction.bond, deadline, v, r, s);
+        _commit(id, commitment);
+    }
+
+    function _commit(uint256 id, bytes32 commitment) private {
         Auction storage auction = _auction(id);
         if (
             block.timestamp < auction.schedule.commitStart
@@ -161,6 +181,25 @@ contract PFDAAuction is ReentrancyGuard {
     }
 
     function reveal(uint256 id, uint128 amount, bytes32 salt) external nonReentrant {
+        _reveal(id, amount, salt);
+    }
+
+    /// @notice Uses an exact ERC-2612 permit for the revealed bid, then immediately consumes it.
+    /// @dev The signature owner is always msg.sender and the auction is the only permitted spender.
+    function revealWithPermit(
+        uint256 id,
+        uint128 amount,
+        bytes32 salt,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external nonReentrant {
+        _tryPermit(msg.sender, amount, deadline, v, r, s);
+        _reveal(id, amount, salt);
+    }
+
+    function _reveal(uint256 id, uint128 amount, bytes32 salt) private {
         Auction storage auction = _auction(id);
         if (
             block.timestamp < auction.schedule.commitEnd
@@ -187,6 +226,11 @@ contract PFDAAuction is ReentrancyGuard {
         totalRefundable += amount;
         _deposit(amount);
         emit BidRevealed(id, msg.sender, amount);
+    }
+
+    /// @notice Feature probe for clients; version one denotes the exact ERC-2612 entry points above.
+    function permitAuthorizationVersion() external pure returns (uint8) {
+        return 1;
     }
 
     /// @notice Anyone can finalize; must finalize before activation to sell the full fixed window.
@@ -263,6 +307,21 @@ contract PFDAAuction is ReentrancyGuard {
         uint256 beforeBalance = bidToken.balanceOf(address(this));
         bidToken.safeTransferFrom(msg.sender, address(this), amount);
         if (bidToken.balanceOf(address(this)) != beforeBalance + amount) revert UnsupportedToken();
+    }
+
+    /// @dev A permit can be submitted separately before this transaction. In that case, use the
+    ///      already-set exact allowance; otherwise `_deposit` safely rejects the action.
+    function _tryPermit(
+        address owner,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) private {
+        try IERC20Permit(address(bidToken))
+            .permit(owner, address(this), value, deadline, v, r, s) {}
+            catch {}
     }
 }
 // forge-lint: disable-end(block-timestamp)

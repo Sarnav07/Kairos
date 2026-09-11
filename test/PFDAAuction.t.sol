@@ -317,6 +317,59 @@ contract PFDAAuctionTest is Test {
         assertEq(auction.getAuction(id).reveals, 1);
     }
 
+    function testPermitCommitAndRevealConsumeExactAuthorizations() public {
+        uint256 signerKey = 0xD1CE;
+        address bidder = vm.addr(signerKey);
+        uint128 amount = 125e6;
+        uint256 deadline = block.timestamp + 15 minutes;
+        token.mint(bidder, 1_000e6);
+
+        vm.warp(1010);
+        bytes32 commitment = auction.commitmentHash(id, bidder, amount, SALT);
+        (uint8 commitV, bytes32 commitR, bytes32 commitS) =
+            _permitSignature(signerKey, bidder, BOND, deadline);
+        vm.prank(bidder);
+        auction.commitWithPermit(id, commitment, deadline, commitV, commitR, commitS);
+        assertEq(token.allowance(bidder, address(auction)), 0);
+        assertEq(token.nonces(bidder), 1);
+
+        vm.warp(1110);
+        (uint8 revealV, bytes32 revealR, bytes32 revealS) =
+            _permitSignature(signerKey, bidder, amount, deadline);
+        vm.prank(bidder);
+        auction.revealWithPermit(id, amount, SALT, deadline, revealV, revealR, revealS);
+        assertEq(token.allowance(bidder, address(auction)), 0);
+        assertEq(token.nonces(bidder), 2);
+        assertEq(auction.getAuction(id).reveals, 1);
+        assertEq(auction.permitAuthorizationVersion(), 1);
+    }
+
+    function testPermitEntrypointsRejectExpiredAndToleratePreSubmittedPermit() public {
+        uint256 signerKey = 0xD1CE;
+        address bidder = vm.addr(signerKey);
+        uint128 amount = 125e6;
+        uint256 deadline = 1009;
+        token.mint(bidder, 1_000e6);
+        bytes32 commitment = auction.commitmentHash(id, bidder, amount, SALT);
+        (uint8 v, bytes32 r, bytes32 s) = _permitSignature(signerKey, bidder, BOND, deadline);
+
+        vm.warp(1010);
+        vm.prank(bidder);
+        vm.expectRevert();
+        auction.commitWithPermit(id, commitment, deadline, v, r, s);
+        assertEq(auction.getAuction(id).commitments, 0);
+
+        deadline = block.timestamp + 15 minutes;
+        (v, r, s) = _permitSignature(signerKey, bidder, BOND, deadline);
+        token.permit(bidder, address(auction), BOND, deadline, v, r, s);
+        assertEq(token.allowance(bidder, address(auction)), BOND);
+        vm.prank(bidder);
+        auction.commitWithPermit(id, commitment, deadline, v, r, s);
+        assertEq(token.nonces(bidder), 1);
+        assertEq(token.allowance(bidder, address(auction)), 0);
+        assertEq(auction.getAuction(id).commitments, 1);
+    }
+
     function testSchedulePermissionsAndNonOverlap() public {
         PFDAAuction.Schedule memory schedule = _schedule();
         vm.prank(alice);
@@ -384,5 +437,21 @@ contract PFDAAuctionTest is Test {
         auction.collectProceeds();
         assertEq(token.balanceOf(address(auction)), 0);
         assertEq(token.balanceOf(alice), 850e6);
+    }
+
+    function _permitSignature(uint256 signerKey, address owner, uint256 value, uint256 deadline)
+        internal
+        view
+        returns (uint8 v, bytes32 r, bytes32 s)
+    {
+        bytes32 typeHash = keccak256(
+            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+        );
+        bytes32 structHash = keccak256(
+            abi.encode(typeHash, owner, address(auction), value, token.nonces(owner), deadline)
+        );
+        bytes32 digest =
+            keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
+        return vm.sign(signerKey, digest);
     }
 }

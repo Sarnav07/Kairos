@@ -135,6 +135,13 @@ h1 span { color: #e75d42; }
 .vault-actions select { min-width: 0; padding: 8px; border: 1px solid #9db6cf; border-radius: 0; background: #f8fbfe; color: #264863; font-size: 11px; }
 .write-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 17px; }
 .write-row .button { flex: 1 1 112px; }
+.permit-slip { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(0, 1.2fr); gap: 14px; margin-top: 12px; padding: 13px 15px; border: 1px solid #b9a7d2; background: #eee9f7; }
+.permit-slip strong { display: block; margin-top: 5px; color: #422d68; font: 700 17px/1 Georgia, serif; }
+.permit-slip p { margin: 0; color: #5e4c78; font-size: 11px; line-height: 1.48; }
+.permit-slip.unavailable { border-color: #aebdca; background: #e8f0f7; }
+.permit-slip.unavailable strong { color: #294c69; }
+.permit-slip.unavailable p { color: #536f87; }
+.permit { border-color: #7050a1; background: #e6dcf4; color: #422d68; }
 .schedule-fields { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 24px 0 12px; }
 .schedule-fields label:last-child { grid-column: 1 / -1; }
 .schedule-fields label, .operator-money label { color: #655c31; }
@@ -293,7 +300,7 @@ footer { display: flex; justify-content: space-between; padding: 17px 0 29px; co
   .status-strip strong { font-size: 11px; }
   .command-panel, .receipt-panel { padding: 22px 18px; }
   .bidder-panel, .operator-panel { padding: 24px 19px; }
-  .auction-load-row, .vault-box, .operator-money { grid-template-columns: 1fr; }
+  .auction-load-row, .vault-box, .operator-money, .permit-slip { grid-template-columns: 1fr; }
   .vault-actions { grid-template-columns: 1fr; }
   .schedule-fields { grid-template-columns: 1fr; }
   .schedule-fields label:last-child { grid-column: auto; }

@@ -17,6 +17,8 @@ import {
   collectProceeds,
   commitBid,
   createAuction,
+  permitAndCommitBid,
+  permitAndRevealBid,
   readBidPreflight,
   readNextAuctionId,
   revealBid,
@@ -318,7 +320,7 @@ function App() {
     }
   }
 
-  async function runBidAction(action: 'approve-commit' | 'commit' | 'approve-reveal' | 'reveal' | 'refund') {
+  async function runBidAction(action: 'approve-commit' | 'commit' | 'permit-commit' | 'approve-reveal' | 'reveal' | 'permit-reveal' | 'refund') {
     const provider = getInjectedProvider()
     if (!provider || !connectedAddress || !bidPreflight) {
       setLiveNotice('Connect a wallet and load auction preflight before sending a transaction.')
@@ -336,9 +338,22 @@ function App() {
       let hash: Hex
       if (action === 'approve-commit') hash = await approveBidToken(provider, connectedAddress, requiredAllowance('commit', bidPreflight.auction.bond, bid))
       else if (action === 'approve-reveal') hash = await approveBidToken(provider, connectedAddress, requiredAllowance('reveal', bidPreflight.auction.bond, bid))
+      else if (action === 'permit-commit') {
+        if (!liveSecret) throw new Error('Prepare and encrypt the matching secret before signing a permit.')
+        if (bidPreflight.permit.status !== 'available') throw new Error(bidPreflight.permit.reason)
+        hash = await permitAndCommitBid(
+          provider, connectedAddress, auctionId, liveSecret.commitment, bidPreflight.permit, bidPreflight.auction.bond,
+        )
+      }
       else if (action === 'commit') {
         if (!liveSecret) throw new Error('Prepare and encrypt the matching secret before committing.')
         hash = await commitBid(provider, connectedAddress, auctionId, liveSecret.commitment)
+      } else if (action === 'permit-reveal') {
+        if (!liveSecret) throw new Error('Unlock the matching vault secret before signing a permit.')
+        if (bidPreflight.permit.status !== 'available') throw new Error(bidPreflight.permit.reason)
+        hash = await permitAndRevealBid(
+          provider, connectedAddress, auctionId, BigInt(liveSecret.bidAmountAtomic), liveSecret.salt, bidPreflight.permit,
+        )
       } else if (action === 'reveal') {
         if (!liveSecret) throw new Error('Unlock the matching vault secret before revealing.')
         hash = await revealBid(provider, connectedAddress, auctionId, BigInt(liveSecret.bidAmountAtomic), liveSecret.salt)
@@ -559,6 +574,12 @@ function App() {
               <span><b>Phase</b>{phaseLabel(bidPreflight.phase)}</span><span><b>Bond</b>{formatUsdc(bidPreflight.auction.bond)}</span><span><b>Minimum</b>{formatUsdc(bidPreflight.auction.minimumBid)}</span><span><b>Balance</b>{formatUsdc(bidPreflight.balance)}</span><span><b>Allowance</b>{formatUsdc(bidPreflight.allowance)}</span>
             </div>
           ) : <p className="empty-live">No auction loaded. Scheduling remains a separate deployer action.</p>}
+          {bidPreflight && <div className={`permit-slip ${bidPreflight.permit.status}`}>
+            <div><span className="step-cap">Signature authorization</span><strong>{bidPreflight.permit.status === 'available' ? 'ERC-2612 available' : 'Standard approval required'}</strong></div>
+            <p>{bidPreflight.permit.status === 'available'
+              ? `Sign an exact ${formatUsdc(bidPreflight.auction.bond)} bond or bid authorization. Each signature expires after 15 minutes and is consumed by its matching auction action.`
+              : `${bidPreflight.permit.reason} Approval remains the only enabled path for this verified deployment.`}</p>
+          </div>}
           <div className="live-secret-row">
             <button className="button ink" disabled={!bidPreflight} onClick={prepareLiveSecret} type="button">Prepare auction secret</button>
             <span>{liveSecret ? `Ready · ${shortHash(liveSecret.commitment)}` : 'Secret not prepared'}</span>
@@ -577,8 +598,10 @@ function App() {
           </div>
           <div className="write-row">
             <button className="button outline" disabled={!bidPreflight} onClick={() => runBidAction('approve-commit')} type="button">Approve bond</button>
+            <button className="button permit" disabled={!bidPreflight || !liveSecret || bidPreflight.phase !== 1 || bidPreflight.permit.status !== 'available'} onClick={() => runBidAction('permit-commit')} type="button">Sign permit &amp; commit</button>
             <button className="button coral" disabled={!bidPreflight || !liveSecret || bidPreflight.phase !== 1} onClick={() => runBidAction('commit')} type="button">Commit hash</button>
             <button className="button outline" disabled={!bidPreflight} onClick={() => runBidAction('approve-reveal')} type="button">Approve bid</button>
+            <button className="button permit" disabled={!bidPreflight || !liveSecret || bidPreflight.phase !== 2 || bidPreflight.permit.status !== 'available'} onClick={() => runBidAction('permit-reveal')} type="button">Sign permit &amp; reveal</button>
             <button className="button coral" disabled={!bidPreflight || !liveSecret || bidPreflight.phase !== 2} onClick={() => runBidAction('reveal')} type="button">Reveal bid</button>
             <button className="button outline" disabled={!bidPreflight} onClick={() => runBidAction('refund')} type="button">Claim refund</button>
           </div>

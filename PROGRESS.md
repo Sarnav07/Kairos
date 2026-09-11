@@ -100,3 +100,9 @@
 - Added an editable bid worksheet that makes pool-volume, captured-share, surcharge, sealed-bid and gas assumptions visible. It calculates eligible volume, waived-surcharge savings, all-in cost, modelled net value, break-even eligible flow and implied pool volume.
 - Added a deterministic half/expected/double-volume sensitivity strip and explicitly labels the calculation as an assumption model rather than a price quote, forecast, execution estimate or guarantee.
 - Added focused arithmetic tests for the core formula, unavailable break-even cases, and sensitivity construction, bringing the frontend suite to 17 tests. No wallet action, testnet transaction, or auction claim is created by this feature.
+
+## Chunk 14: permit authorization
+
+- Extended source MockUSDC with ERC-2612 and added `commitWithPermit`/`revealWithPermit` to PFDAAuction. Each signature authorizes only the fixed bond or exact bid for the immutable auction, expires after 15 minutes in the workstation, and is consumed by the matching deposit. The contract tolerates a separately submitted permit when the matching exact allowance is already present.
+- Added a wallet-side capability probe for the token `nonces`/domain plus auction authorization version. It enables permit actions only when both contracts support the exact path; standard approval is deliberately retained as the fallback for smart-contract wallets, unsupported tokens, and the currently deployed public pair.
+- Added permit nonce/replay/expiry tests, an end-to-end permit lifecycle test, pre-submitted-permit handling, and a typed-data request test. The source/test gate does not redeploy or claim a live permit rehearsal. Full verification now covers 18 frontend tests and 78 Solidity tests.

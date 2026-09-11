@@ -10,6 +10,7 @@ It demonstrates:
 - injected-wallet detection and a Unichain Sepolia network guard;
 - a public contract registry, read-only immutable-wiring check, and Uniscan address links for the deployed stack.
 - wallet-confirmed exact-amount MockUSDC approval, commit, reveal and refund actions;
+- ERC-2612 capability detection plus exact, 15-minute permit-based commit/reveal actions when both configured contracts support them; and
 - AES-GCM/PBKDF2 encrypted bid-secret records in local browser storage; and
 - an immutable-deployer-gated schedule/proceeds panel with fixed pool configuration.
 - a read-only event dashboard with live phase/countdown, state, receipts, and a two-bidder rehearsal checklist.
@@ -33,4 +34,4 @@ npm run build
 
 ## Important boundary
 
-The lifecycle receipt ledger is a simulator, not a transaction explorer, and the fee comparison is not a price or execution quote. The bid worksheet is editable arithmetic, not financial advice, an execution quote, a volume forecast, or a guarantee that a bidder will win or capture the assumed flow. The live dashboard reads a bounded recent RPC event window; it is useful for a rehearsal but not a permanent indexer. A live-write button always requires the user’s connected wallet confirmation; the app does not hold a wallet key. Vault passwords are never stored, and a forgotten password cannot be recovered. No auction is created unless the verified immutable deployer explicitly confirms the schedule transaction.
+The lifecycle receipt ledger is a simulator, not a transaction explorer, and the fee comparison is not a price or execution quote. The bid worksheet is editable arithmetic, not financial advice, an execution quote, a volume forecast, or a guarantee that a bidder will win or capture the assumed flow. Permit actions require both an ERC-2612 token and the permit-aware auction entrypoints; the currently verified deployment intentionally reports standard approval required. A permit is an exact, time-bounded allowance—not a guarantee of the auction action—and a publicly submitted permit may be consumed before its bundled transaction, which the auction tolerates only when the matching exact allowance already exists. The live dashboard reads a bounded recent RPC event window; it is useful for a rehearsal but not a permanent indexer. A live-write button always requires the user’s connected wallet confirmation; the app does not hold a wallet key. Vault passwords are never stored, and a forgotten password cannot be recovered. No auction is created unless the verified immutable deployer explicitly confirms the schedule transaction.

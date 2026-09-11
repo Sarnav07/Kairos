@@ -1,4 +1,4 @@
-import { createWalletClient, custom, getAddress, type Address, type Hex } from 'viem'
+import { createWalletClient, custom, getAddress, parseSignature, zeroHash, type Address, type Hex } from 'viem'
 import { liveContracts, publicClient, unichainSepolia, type Eip1193Provider } from './testnet'
 
 const scheduleComponents = [
@@ -27,7 +27,10 @@ export const auctionAbi = [
   },
   { type: 'function', name: 'phase', stateMutability: 'view', inputs: [{ name: 'id', type: 'uint256' }], outputs: [{ type: 'uint8' }] },
   { type: 'function', name: 'commit', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }, { name: 'commitment', type: 'bytes32' }], outputs: [] },
+  { type: 'function', name: 'commitWithPermit', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }, { name: 'commitment', type: 'bytes32' }, { name: 'deadline', type: 'uint256' }, { name: 'v', type: 'uint8' }, { name: 'r', type: 'bytes32' }, { name: 's', type: 'bytes32' }], outputs: [] },
   { type: 'function', name: 'reveal', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }, { name: 'amount', type: 'uint128' }, { name: 'salt', type: 'bytes32' }], outputs: [] },
+  { type: 'function', name: 'revealWithPermit', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }, { name: 'amount', type: 'uint128' }, { name: 'salt', type: 'bytes32' }, { name: 'deadline', type: 'uint256' }, { name: 'v', type: 'uint8' }, { name: 'r', type: 'bytes32' }, { name: 's', type: 'bytes32' }], outputs: [] },
+  { type: 'function', name: 'permitAuthorizationVersion', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint8' }] },
   { type: 'function', name: 'withdrawRefund', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }], outputs: [] },
   { type: 'function', name: 'collectProceeds', stateMutability: 'nonpayable', inputs: [], outputs: [] },
   {
@@ -59,10 +62,32 @@ export const hookEventAbi = [
 ] as const
 
 const erc20Abi = [
+  { type: 'function', name: 'name', stateMutability: 'view', inputs: [], outputs: [{ type: 'string' }] },
   { type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] },
   { type: 'function', name: 'allowance', stateMutability: 'view', inputs: [{ type: 'address' }, { type: 'address' }], outputs: [{ type: 'uint256' }] },
   { type: 'function', name: 'approve', stateMutability: 'nonpayable', inputs: [{ type: 'address' }, { type: 'uint256' }], outputs: [{ type: 'bool' }] },
 ] as const
+
+const permitAbi = [
+  { type: 'function', name: 'nonces', stateMutability: 'view', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] },
+  { type: 'function', name: 'DOMAIN_SEPARATOR', stateMutability: 'view', inputs: [], outputs: [{ type: 'bytes32' }] },
+] as const
+
+const permitTypes = {
+  Permit: [
+    { name: 'owner', type: 'address' },
+    { name: 'spender', type: 'address' },
+    { name: 'value', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ],
+} as const
+
+export const PERMIT_TTL_SECONDS = 15 * 60
+
+export type PermitSupport =
+  | { status: 'available'; tokenName: string; nonce: bigint }
+  | { status: 'unavailable'; reason: string }
 
 export type LiveAuction = {
   poolId: Hex
@@ -78,7 +103,13 @@ export type LiveAuction = {
   cancelled: boolean
 }
 
-export type BidPreflight = { auction: LiveAuction; phase: number; balance: bigint; allowance: bigint }
+export type BidPreflight = {
+  auction: LiveAuction
+  phase: number
+  balance: bigint
+  allowance: bigint
+  permit: PermitSupport
+}
 
 export async function readBidPreflight(auctionId: bigint, bidder: Address): Promise<BidPreflight> {
   const [auction, phase, balance, allowance] = await Promise.all([
@@ -87,7 +118,25 @@ export async function readBidPreflight(auctionId: bigint, bidder: Address): Prom
     publicClient.readContract({ address: liveContracts.mockUsdc, abi: erc20Abi, functionName: 'balanceOf', args: [bidder] }),
     publicClient.readContract({ address: liveContracts.mockUsdc, abi: erc20Abi, functionName: 'allowance', args: [bidder, liveContracts.auction] }),
   ])
-  return { auction, phase: Number(phase), balance, allowance }
+  const permit = await readPermitSupport(bidder)
+  return { auction, phase: Number(phase), balance, allowance, permit }
+}
+
+async function readPermitSupport(bidder: Address): Promise<PermitSupport> {
+  try {
+    const [tokenName, nonce, domainSeparator, authorizationVersion] = await Promise.all([
+      publicClient.readContract({ address: liveContracts.mockUsdc, abi: erc20Abi, functionName: 'name' }),
+      publicClient.readContract({ address: liveContracts.mockUsdc, abi: permitAbi, functionName: 'nonces', args: [bidder] }),
+      publicClient.readContract({ address: liveContracts.mockUsdc, abi: permitAbi, functionName: 'DOMAIN_SEPARATOR' }),
+      publicClient.readContract({ address: liveContracts.auction, abi: auctionAbi, functionName: 'permitAuthorizationVersion' }),
+    ])
+    if (!tokenName || domainSeparator === zeroHash || authorizationVersion !== 1) {
+      return { status: 'unavailable', reason: 'This token and auction do not expose the supported ERC-2612 path.' }
+    }
+    return { status: 'available', tokenName, nonce }
+  } catch {
+    return { status: 'unavailable', reason: 'This deployed stack uses the standard ERC-20 approval path.' }
+  }
 }
 
 export async function readAuction(auctionId: bigint): Promise<LiveAuction> {
@@ -111,8 +160,36 @@ export async function commitBid(provider: Eip1193Provider, account: Address, auc
   return send(provider, account, liveContracts.auction, auctionAbi, 'commit', [auctionId, commitment])
 }
 
+export async function permitAndCommitBid(
+  provider: Eip1193Provider,
+  account: Address,
+  auctionId: bigint,
+  commitment: Hex,
+  permit: Extract<PermitSupport, { status: 'available' }>,
+  bond: bigint,
+): Promise<Hex> {
+  const signature = await signBidPermit(provider, account, permit.tokenName, bond)
+  return send(provider, account, liveContracts.auction, auctionAbi, 'commitWithPermit', [
+    auctionId, commitment, signature.deadline, signature.v, signature.r, signature.s,
+  ])
+}
+
 export async function revealBid(provider: Eip1193Provider, account: Address, auctionId: bigint, amount: bigint, salt: Hex): Promise<Hex> {
   return send(provider, account, liveContracts.auction, auctionAbi, 'reveal', [auctionId, amount, salt])
+}
+
+export async function permitAndRevealBid(
+  provider: Eip1193Provider,
+  account: Address,
+  auctionId: bigint,
+  amount: bigint,
+  salt: Hex,
+  permit: Extract<PermitSupport, { status: 'available' }>,
+): Promise<Hex> {
+  const signature = await signBidPermit(provider, account, permit.tokenName, amount)
+  return send(provider, account, liveContracts.auction, auctionAbi, 'revealWithPermit', [
+    auctionId, amount, salt, signature.deadline, signature.v, signature.r, signature.s,
+  ])
 }
 
 export async function withdrawRefund(provider: Eip1193Provider, account: Address, auctionId: bigint): Promise<Hex> {
@@ -137,7 +214,7 @@ async function send(
   provider: Eip1193Provider,
   account: Address,
   address: Address,
-  abi: typeof auctionAbi | typeof erc20Abi,
+  abi: typeof auctionAbi | typeof erc20Abi | typeof permitAbi,
   functionName: string,
   args: readonly unknown[],
 ): Promise<Hex> {
@@ -155,6 +232,44 @@ async function send(
   const receipt = await publicClient.waitForTransactionReceipt({ hash })
   if (receipt.status !== 'success') throw new Error('The transaction did not succeed on Unichain Sepolia.')
   return receipt.transactionHash
+}
+
+async function signBidPermit(
+  provider: Eip1193Provider,
+  account: Address,
+  tokenName: string,
+  value: bigint,
+): Promise<{ deadline: bigint; v: number; r: Hex; s: Hex }> {
+  const nonce = await publicClient.readContract({
+    address: liveContracts.mockUsdc,
+    abi: permitAbi,
+    functionName: 'nonces',
+    args: [account],
+  })
+  const deadline = BigInt(Math.floor(Date.now() / 1_000) + PERMIT_TTL_SECONDS)
+  const client = createWalletClient({
+    account,
+    chain: unichainSepolia,
+    transport: custom(provider as never),
+  })
+  const signature = await client.signTypedData(buildPermitRequest(tokenName, account, value, nonce, deadline))
+  const { yParity, r, s } = parseSignature(signature)
+  return { deadline, v: yParity + 27, r, s }
+}
+
+export function buildPermitRequest(
+  tokenName: string,
+  owner: Address,
+  value: bigint,
+  nonce: bigint,
+  deadline: bigint,
+) {
+  return {
+    domain: { name: tokenName, version: '1', chainId: unichainSepolia.id, verifyingContract: liveContracts.mockUsdc },
+    types: permitTypes,
+    primaryType: 'Permit' as const,
+    message: { owner, spender: liveContracts.auction, value, nonce, deadline },
+  }
 }
 
 export function addressesMatch(first: Address | null, second: Address): boolean {

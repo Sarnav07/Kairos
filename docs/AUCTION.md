@@ -6,6 +6,14 @@
 
 MockUSDC is the intended demo token. The contract uses OpenZeppelin SafeERC20 and ReentrancyGuard from the already pinned v5.2.0 dependency. No additional dependencies were required.
 
+## Optional ERC-2612 authorization
+
+The source MockUSDC implements ERC-2612 and PFDAAuction exposes `commitWithPermit` and `revealWithPermit`. Each action signs an exact allowance for the immutable auction: the fixed bond at commit or the exact revealed bid at reveal. The allowance is consumed in that same auction transaction, and the browser creates a 15-minute deadline. `nonces` prevent signature replay.
+
+Ordinary `commit` and `reveal` remain supported for non-permit tokens and smart-contract wallets. The permit entrypoints tolerate a valid permit that was submitted separately before the auction transaction, then rely on the resulting exact allowance; without that allowance, the deposit safely reverts. This avoids a denial of service from public permit submission, but it does not make a permit a reservation or a guarantee of auction execution.
+
+The public Unichain Sepolia MockUSDC/Auction deployment predates this feature and does not advertise the required ERC-2612 and auction capability checks. The workstation keeps its standard-approval controls enabled there. Redeploy the bid token and auction together, update the verified address registry, and complete a separate rehearsal before representing permit flow as live.
+
 `activeWinner(auctionId)` returns a winning bidder; it is not the hook's executor eligibility interface. Chunk 3 now supplies PFDAExecutor to validate pool/auction correspondence and authenticate the bidder's execution path before granting a waiver. See EXECUTION.md.
 
 ## Schedule and auction rules

@@ -81,7 +81,7 @@ The [deployment manifest](../deployments/unichain-sepolia.json) includes the dep
 The final testnet rehearsal needs two funded bidder wallets and a pre-initialized ERC-20/ ERC-20 pool using the deployed PFDA hook. Record transaction links for:
 
 1. Auction schedule creation, with its fixed commit/reveal/activation/expiry windows.
-2. Each bidder’s MockUSDC mint/approval, commitment and reveal.
+2. Each bidder’s MockUSDC mint/approval, commitment and reveal. The current public deployment uses ordinary approvals; do not claim a permit rehearsal until a compatible token/auction redeployment has been independently verified.
 3. Permissionless finalization, loser refund, and `collectProceeds` to the deployer address.
 4. A winner swap through PFDAExecutor while the right is active, plus an ordinary swap comparison.
 
