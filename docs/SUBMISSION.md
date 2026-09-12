@@ -13,7 +13,7 @@ The prototype does not claim to waive native Uniswap protocol fees, all swap fee
 3. Run the local demo: `cd app && npm ci && npm run dev`.
 4. Inspect fee accounting in [FEE_ACCOUNTING.md](FEE_ACCOUNTING.md), auction rules in [AUCTION.md](AUCTION.md), and executor authentication in [EXECUTION.md](EXECUTION.md).
 5. Run `bash tools/verify-submission-evidence.sh` to validate the public infrastructure links and pending-state guardrails, then `bash tools/verify-production-readiness.sh` to validate the pending soak/audit boundaries.
-6. Follow [TESTNET.md](TESTNET.md) only after a funded local testnet signer is available.
+6. Follow the one-pass [REHEARSAL.md](REHEARSAL.md) only after a funded local testnet signer and two bidder wallets are available.
 
 ## ETHGlobal / Uniswap Foundation release gate
 

@@ -50,7 +50,7 @@ See [PLAN.md](PLAN.md) for milestones and commit gates. See [FEEDBACK.md](FEEDBA
 | Winner authentication and transaction-scoped eligibility | [PFDAExecutor: swap and callback](src/PFDAExecutor.sol#L63-L134) | [Execution specification](docs/EXECUTION.md), [integration tests](test/PFDAIntegration.t.sol) |
 | Valid v4 hook deployment address | [PFDAHookDeployer: CREATE2 prediction and deployment](src/PFDAHookDeployer.sol#L18-L89) | [Deployment preflight tests](test/PFDAHookDeployer.t.sol), [testnet procedure](docs/TESTNET.md) |
 
-Known constraints are collected in [LIMITATIONS.md](docs/LIMITATIONS.md). The required submission checklist and judge path are in [SUBMISSION.md](docs/SUBMISSION.md). Public deployment receipts and the honest outstanding-evidence list are in [EVIDENCE.md](docs/EVIDENCE.md). The production-readiness boundaries are in [PRODUCTION.md](docs/PRODUCTION.md).
+Known constraints are collected in [LIMITATIONS.md](docs/LIMITATIONS.md). The required submission checklist and judge path are in [SUBMISSION.md](docs/SUBMISSION.md). Public deployment receipts and the honest outstanding-evidence list are in [EVIDENCE.md](docs/EVIDENCE.md). Run the single [rehearsal handoff](docs/REHEARSAL.md) before recording; it is backed by `bash tools/verify-demo-readiness.sh`. The production-readiness boundaries are in [PRODUCTION.md](docs/PRODUCTION.md).
 
 ## Local demo workstation
 

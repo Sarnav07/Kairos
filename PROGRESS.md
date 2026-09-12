@@ -125,3 +125,8 @@
 - Added a scoped [threat model](docs/THREAT_MODEL.md), an advisory event-index schema plus reorg-safe ingestion contract, and a [production operations runbook](docs/PRODUCTION.md). Indexer data is explicitly cache-only: direct contract calls and finalized logs remain the authority, and it can never submit transactions.
 - Defined monitoring signals, an off-chain incident policy for an immutable/no-pause protocol, a reproducible clean-checkout release procedure, a seven-day testnet soak plan, and an exact-commit external-audit scope.
 - Added `tools/verify-production-readiness.sh`, schema validation with SQLite, and CI/clean-checkout coverage for the release-document gate. The soak run and audit are deliberately recorded as pending; no production certification, pause capability, live Harberger deployment, or completed external review is claimed.
+
+## Final rehearsal handoff
+
+- Added [REHEARSAL.md](docs/REHEARSAL.md) and `tools/verify-demo-readiness.sh`, a single source-side gate that runs the contract/frontend/production checks and hands the operator the exact two-bidder recording sequence, stop conditions, and evidence discipline.
+- No testnet transaction or evidence status changed. The remaining work is deliberately human-run: the public rehearsal, receipt recording, demo video, and account-bound feedback submission.
