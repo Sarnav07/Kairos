@@ -1,10 +1,10 @@
-# Chunk 15: proposed Harberger fee-right lease
+# Chunks 15–16: Harberger fee-right lease
 
 ## Status and decision boundary
 
-This is a written design, not deployed or executable lease code. It proposes an alternative allocation mode for the application-level surcharge waiver in [FEE_ACCOUNTING.md](FEE_ACCOUNTING.md). It does not alter the deployed sealed-auction contracts, pool, hook, executor, addresses, or evidence register.
+The approved design is implemented locally in `HarbergerFeeLease` and `HarbergerExecutor`. It is an alternative allocation mode for the application-level surcharge waiver in [FEE_ACCOUNTING.md](FEE_ACCOUNTING.md). It does not alter the deployed sealed-auction contracts, pool, hook, executor, addresses, or evidence register. No Harberger contract has been deployed or presented as live.
 
-Chunk 16 must not begin until the project owner approves the decisions in [Approval gate](#approval-gate). A Harberger lease is a materially different financial product from the sealed first-price auction: the holder continuously self-prices the right, pays rent, and can lose it through takeover or insolvency.
+A Harberger lease is a materially different financial product from the sealed first-price auction: the holder continuously self-prices the right, pays rent, and can lose it through takeover or insolvency. The project owner approved the initial allocation and immutable testnet terms recorded below before implementation began.
 
 ## Objective and immutable terms
 
@@ -21,6 +21,19 @@ Each lease source fixes these terms at deployment. No owner, deployer, operator,
 | Grace period | G | Positive post-insolvency cure window. |
 | Minimum prepay | P | Positive duration, proposed as I; acquisitions, valuation changes, and cures must cover it. |
 | Rent recipient | R | Immutable deployer-recipient, matching the current auction proceeds rule. |
+
+### Approved testnet configuration
+
+| Decision | Selected value |
+| --- | --- |
+| Initial allocation | Only the active winner of one immutable sealed first-price auction may call `claimInitial`; later vacant rights use `claimVacant`. |
+| T | Existing six-decimal MockUSDC. |
+| r | 1,000 bps/year (10%). |
+| Vmin | 100 MockUSDC (`100e6` atomic units). |
+| I and P | One day. At Vmin the minimum prepayment is 27,398 atomic units (0.027398 MockUSDC), so it cannot round to zero. |
+| G | Six hours. |
+| Economics | Rent is pull-collectable only by the immutable initial-auction deployer; takeover pays the full declared price to the incumbent; no liquidation bounty. |
+| Deployment boundary | Any future live mode uses a new lease source, executor, hook, and pool. The verified auction stack remains unchanged. |
 
 ## State and accounting
 
@@ -86,7 +99,7 @@ The implementation must calculate this boundary with the same arithmetic as sett
 
 When holder[p] is zero, anyone may call claimVacant(pool, V, deposit) with V at least Vmin and deposit at least minimumPrepay(V). The caller becomes holder and starts with no unpaid rent. No payment goes to a prior holder because the right is vacant.
 
-Whether a right begins vacant or comes from a sealed first-price auction is deliberately deferred to the [Approval gate](#approval-gate). Chunk 16 must implement exactly one allocation rule, not mix them.
+The first holder is not a vacant-right claimant: only the active winner of the immutable sealed first-price auction may call `claimInitial`. Once that holder releases or is liquidated, the right is vacant and `claimVacant` is available. The two entrypoints cannot be used to bypass the initial auction allocation.
 
 ### Top up, cure, and valuation changes
 
@@ -145,25 +158,18 @@ The existing executor hard-codes PFDAAuction and cannot be retrofitted in place.
 
 The first implementation excludes delegated holders, partial ownership, subleases, liquidation rewards, price-oracle valuation, protocol-fee changes, native collateral, upgradeability, pausing, and mutable governance.
 
-## Required Chunk 16 verification
+## Implemented verification and live boundary
 
-Implementation may start only after approval below, then must add:
+The local implementation includes deterministic lifecycle tests, a fuzzed takeover/accounting test, stateful invariants for token conservation and insolvent/vacant eligibility, and real-v4 hook/executor tests for holder, takeover, and insolvency behavior. `forge test` is the source gate.
+
+Before a testnet broadcast or any UI claim that lease mode is live, the remaining requirements are:
 
 - deterministic tests for claim, top-up, valuation change, release, takeover, grace, cure, liquidation, credits, and delayed/failed withdrawals;
 - fuzz tests over time, valuations, deposits, rate rounding, and repeated takeovers;
 - stateful invariants for token conservation, exact liabilities, one active holder per pool, no discount while insolvent, immutable terms/recipient, and no stale holder after release/liquidation;
 - executor/hook integration tests proving only the active lease holder receives the app-surcharge waiver while ordinary traders retain access;
-- a complete local lease lifecycle before any testnet broadcast; and
 - a separately verified deployment/rehearsal before the app presents lease mode as live.
 
-## Approval gate
+## Approved decision record
 
-The project owner must explicitly approve all five items before Chunk 16:
-
-1. Allocation: vacant-right entry, or a sealed-auction winner as the mandatory first lease holder.
-2. Immutable testnet terms: bid token, r, Vmin, I, P, and G.
-3. Economics: rent to immutable deployer recipient; full declared value paid to incumbent on takeover; no liquidation bounty.
-4. Rights: immediate suspension at insolvency, cure-only grace, and permissionless liquidation after grace.
-5. Deployment: a distinct lease source/executor/hook/pool deployment, not a modification or replacement of the current verified stack.
-
-Until all five are approved, this repository has no Harberger lease contract, no lease transaction, no active leased right, and no live lease claim.
+The project owner approved all five implementation decisions: sealed-auction winner first; the immutable MockUSDC, 10%, 100 MockUSDC, one-day, and six-hour testnet terms; deployer rent recipient/full-price takeover/no bounty; immediate suspension with cure-only grace and permissionless liquidation; and a separate future lease deployment with no modification of the existing verified stack.

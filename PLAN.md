@@ -91,7 +91,7 @@ With the September 14 deadline, the credible hackathon path is chunks 7–11 plu
 
 ### Chunk 15 design result
 
-The proposed mechanics, economic boundaries, accounting invariant, lease lifecycle, executor integration, test requirements, and owner approval gate are in [docs/HARBERGER.md](docs/HARBERGER.md). This records a reviewable design only. Do not begin Chunk 16 until the five explicit decisions in that document are approved.
+The approved mechanics, economic boundaries, accounting invariant, lease lifecycle, executor integration, and local verification are in [docs/HARBERGER.md](docs/HARBERGER.md). Chunk 16 source is complete; a distinct live lease deployment, rehearsal, and independent review remain release gates.
 
 ### Operating rules for the expansion
 

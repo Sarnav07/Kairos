@@ -8,7 +8,7 @@
 - The auction has a fixed commitment bond rather than bid-sized collateral at commit. A bidder can strategically avoid revelation by sacrificing that bond.
 - ERC-2612 authorization is source-tested but unavailable on the currently deployed MockUSDC/Auction pair, which predates the permit entrypoints. A live permit demonstration requires a separately verified redeployment and rehearsal. A permit is an allowance, not an execution guarantee; smart-contract wallets and tokens without ERC-2612 use standard approval.
 - Activation delay can reduce some exclusion incentives but does not guarantee censorship resistance or fair transaction ordering.
-- Harberger leasing has a written, approval-gated proposal in [HARBERGER.md](HARBERGER.md), but no lease contract, right-source integration, lease transaction, renewal, rent collection, takeover, or solvency system exists yet.
+- Harberger leasing has locally tested source, a right-source executor integration, and no live lease deployment, transaction, UI, rehearsal, or independent audit. It must not be presented as live until separately deployed and rehearsed; see [HARBERGER.md](HARBERGER.md).
 
 ## Swap and token scope
 

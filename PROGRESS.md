@@ -112,3 +112,10 @@
 - Added [HARBERGER.md](docs/HARBERGER.md), a proposed lease specification for the application-surcharge right. It defines immutable terms, continuous pro-rata rent with rounding carry, solvency-derived rights, cure-only grace, pull-based rent/refund/takeover credits, voluntary release, solvent takeovers, liquidation, and an isolated executor right-source interface.
 - The design explicitly leaves allocation mode and testnet economic parameters for owner approval. It does not add Solidity lease code, modify the deployed stack, create a transaction, or claim a live leased right.
 - Added tools/verify-harberger-spec.sh to check that the required economic, security, integration, test, and approval sections remain present before implementation begins.
+
+## Chunk 16: Harberger fee lease
+
+- Implemented an isolated `HarbergerFeeLease` and `HarbergerExecutor`; the existing auction executor and verified Unichain Sepolia stack are unchanged. The immutable initial-auction deployer is the rent recipient, and only that auction's active sealed-bid winner can claim the initial lease.
+- Implemented the approved MockUSDC testnet terms: 10% annual rent, 100 MockUSDC minimum valuation, one-day minimum prepayment/settlement interval, and a six-hour cure-only grace period. Rent uses integer carry; the minimum daily prepayment is 0.027398 MockUSDC, safely above six-decimal rounding dust.
+- Added deterministic lifecycle tests, fuzzed takeover accounting, stateful conservation/eligibility invariants, and real v4 hook/executor tests that prove the waiver is issued only to the solvent holder and switches/ends at takeover/insolvency.
+- This is source-only verification. No Harberger contracts, hook, executor, pool, or lease have been broadcast, and no UI represents this mode as live. A distinct deployment, rehearsal, and independent review remain required before release.
