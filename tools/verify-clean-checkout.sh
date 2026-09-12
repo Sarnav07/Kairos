@@ -16,6 +16,7 @@ git submodule status --recursive
 forge fmt --check
 forge build
 forge test --summary
+bash tools/verify-production-readiness.sh
 
 cd app
 npm ci --ignore-scripts

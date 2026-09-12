@@ -15,6 +15,7 @@ jobs:
       - run: forge fmt --check
       - run: forge build
       - run: forge test -vv
+      - run: bash tools/verify-production-readiness.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22

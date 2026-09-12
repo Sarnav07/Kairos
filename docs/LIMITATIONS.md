@@ -23,4 +23,4 @@
 - The browser vault encrypts recovery records with AES-GCM and a user password, but it has no password recovery, cross-device synchronization or backup guarantee. The decrypted secret exists only for the browser session.
 - The evidence dashboard reads a bounded recent public-RPC event window. It is not a historical indexer and pooled surcharge receipts are pool-scoped rather than provably attributable to one auction ID.
 - The contract stack and KRA/KRB demonstration pool are publicly deployed on Unichain Sepolia, with addresses and receipts committed in `deployments/unichain-sepolia.json`. A complete auction rehearsal, demo video and submitted feedback form remain outstanding.
-- A production implementation needs further threat modeling, audit, deployment monitoring, key management, frontend transaction state handling, and protocol-specific review.
+- The repository now has a threat model, advisory indexer schema, monitoring/incident runbook, soak plan, and audit scope, but no completed soak, audit, production deployment, or production certification. Those release blockers are tracked in [PRODUCTION.md](PRODUCTION.md).

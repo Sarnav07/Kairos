@@ -33,4 +33,4 @@ Keep each explorer URL visible long enough to read and add it to the showcase de
 
 ## 2:40–3:00 — Limitations and next step
 
-State the MVP scope: one ERC-20/ERC-20 pool, fully filled exact-input swaps, MockUSDC bids, no native-fee waiver, and no Harberger lease yet. Close with the deployment and feedback links from the README.
+State the MVP scope: one ERC-20/ERC-20 pool, fully filled exact-input swaps, MockUSDC bids, no native-fee waiver, and no live Harberger lease. Close with the deployment and feedback links from the README.

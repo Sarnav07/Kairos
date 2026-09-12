@@ -119,3 +119,9 @@
 - Implemented the approved MockUSDC testnet terms: 10% annual rent, 100 MockUSDC minimum valuation, one-day minimum prepayment/settlement interval, and a six-hour cure-only grace period. Rent uses integer carry; the minimum daily prepayment is 0.027398 MockUSDC, safely above six-decimal rounding dust.
 - Added deterministic lifecycle tests, fuzzed takeover accounting, stateful conservation/eligibility invariants, and real v4 hook/executor tests that prove the waiver is issued only to the solvent holder and switches/ends at takeover/insolvency.
 - This is source-only verification. No Harberger contracts, hook, executor, pool, or lease have been broadcast, and no UI represents this mode as live. A distinct deployment, rehearsal, and independent review remain required before release.
+
+## Chunk 17: production hardening
+
+- Added a scoped [threat model](docs/THREAT_MODEL.md), an advisory event-index schema plus reorg-safe ingestion contract, and a [production operations runbook](docs/PRODUCTION.md). Indexer data is explicitly cache-only: direct contract calls and finalized logs remain the authority, and it can never submit transactions.
+- Defined monitoring signals, an off-chain incident policy for an immutable/no-pause protocol, a reproducible clean-checkout release procedure, a seven-day testnet soak plan, and an exact-commit external-audit scope.
+- Added `tools/verify-production-readiness.sh`, schema validation with SQLite, and CI/clean-checkout coverage for the release-document gate. The soak run and audit are deliberately recorded as pending; no production certification, pause capability, live Harberger deployment, or completed external review is claimed.

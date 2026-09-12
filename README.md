@@ -4,7 +4,7 @@ ETHOnline 2026 Start Fresh prototype of the Protocol Fee Discount Auction descri
 
 ## Status
 
-Chunks 0–16 are complete in source. The PFDA contracts and a hook-enabled KRA/KRB demonstration pool are deployed and independently verified on Unichain Sepolia. The workstation connects to Unichain Sepolia wallets, verifies live wiring, supplies bidder approval/commit/reveal/refund controls, and keeps bid recovery records encrypted locally. The immutable deploying wallet alone can schedule a fixed auction or collect proceeds. A read-only dashboard shows live phase/countdowns, state, event receipts and a two-bidder rehearsal checklist. An editable bid worksheet makes the surcharge-savings assumptions, all-in bid cost, break-even flow and volume sensitivity explicit; it is arithmetic, not a quote or forecast. The source now supports exact, expiring ERC-2612 authorizations when both the bid token and auction are redeployed with that capability; the currently verified deployment honestly retains standard ERC-20 approval. A separate, locally tested [Harberger lease mode](docs/HARBERGER.md) starts exclusively with the sealed-auction winner and has not been deployed or presented as live. The public infrastructure evidence register now verifies the repository and deployed receipts; the remaining external work is the real auction rehearsal, its recording, and the account-bound feedback submission.
+Chunks 0–17 are complete in source. The PFDA contracts and a hook-enabled KRA/KRB demonstration pool are deployed and independently verified on Unichain Sepolia. The workstation connects to Unichain Sepolia wallets, verifies live wiring, supplies bidder approval/commit/reveal/refund controls, and keeps bid recovery records encrypted locally. The immutable deploying wallet alone can schedule a fixed auction or collect proceeds. A read-only dashboard shows live phase/countdowns, state, event receipts and a two-bidder rehearsal checklist. An editable bid worksheet makes the surcharge-savings assumptions, all-in bid cost, break-even flow and volume sensitivity explicit; it is arithmetic, not a quote or forecast. The source now supports exact, expiring ERC-2612 authorizations when both the bid token and auction are redeployed with that capability; the currently verified deployment honestly retains standard ERC-20 approval. A separate, locally tested [Harberger lease mode](docs/HARBERGER.md) starts exclusively with the sealed-auction winner and has not been deployed or presented as live. The production-hardening package defines an advisory event indexer, monitoring, incident boundaries, a repeatable release gate, soak criteria, and audit prerequisites; it does not claim a completed soak or audit. The public infrastructure evidence register now verifies the repository and deployed receipts; the remaining external work is the real auction rehearsal, its recording, and the account-bound feedback submission.
 
 ## Agreed scope
 
@@ -14,6 +14,7 @@ Chunks 0–16 are complete in source. The PFDA contracts and a hook-enabled KRA/
 - Auction proceeds go to the deploying wallet, derived from the deployment signer.
 - Full waiver of the auctionable fee component; preserve the LP fee rate.
 - Harberger leasing is a separate, locally tested but undeployed mode; see [HARBERGER.md](docs/HARBERGER.md).
+- Production readiness, incident policy, and audit/soak release blockers are in [PRODUCTION.md](docs/PRODUCTION.md) and [THREAT_MODEL.md](docs/THREAT_MODEL.md).
 
 ## Fee fidelity
 
@@ -49,7 +50,7 @@ See [PLAN.md](PLAN.md) for milestones and commit gates. See [FEEDBACK.md](FEEDBA
 | Winner authentication and transaction-scoped eligibility | [PFDAExecutor: swap and callback](src/PFDAExecutor.sol#L63-L134) | [Execution specification](docs/EXECUTION.md), [integration tests](test/PFDAIntegration.t.sol) |
 | Valid v4 hook deployment address | [PFDAHookDeployer: CREATE2 prediction and deployment](src/PFDAHookDeployer.sol#L18-L89) | [Deployment preflight tests](test/PFDAHookDeployer.t.sol), [testnet procedure](docs/TESTNET.md) |
 
-Known constraints are collected in [LIMITATIONS.md](docs/LIMITATIONS.md). The required submission checklist and judge path are in [SUBMISSION.md](docs/SUBMISSION.md). Public deployment receipts and the honest outstanding-evidence list are in [EVIDENCE.md](docs/EVIDENCE.md).
+Known constraints are collected in [LIMITATIONS.md](docs/LIMITATIONS.md). The required submission checklist and judge path are in [SUBMISSION.md](docs/SUBMISSION.md). Public deployment receipts and the honest outstanding-evidence list are in [EVIDENCE.md](docs/EVIDENCE.md). The production-readiness boundaries are in [PRODUCTION.md](docs/PRODUCTION.md).
 
 ## Local demo workstation
 
