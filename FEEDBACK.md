@@ -6,6 +6,8 @@ Status: collection started; feedback form not submitted.
 
 - The official deployment page lists v4 contracts for Unichain Sepolia (1301).
 - Hooks provide pool customization, but LP fees and native protocol fees require distinct treatment when prototyping PFDA.
+- A worked custom-accounting example that combines a separate input surcharge with LP fees, rounding order, and exact-input partial-fill behavior would reduce integration risk.
+- A concise end-to-end hook-address permission-mining example would make CREATE2 deployment failures easier to diagnose.
 
 ## To record during implementation
 
@@ -23,6 +25,8 @@ Record specific SDK/contracts versions, reproduction steps, errors, useful docum
 Public file: https://github.com/Sarnav07/Kairos/blob/main/FEEDBACK.md
 
 Submit https://developers.uniswap.org/hackathon-feedback with that public URL after the build feedback is complete.
+
+Suggested form summary: Kairos uses unmodified v4 core, PoolManager, hook permissions, custom hook accounting, and a hook-enabled Unichain Sepolia pool. The hardest part was composing a separate input surcharge with LP fee accounting without overstating the result as a native protocol-fee waiver. The hook architecture made the application-level PFDA analogue possible without modifying core.
 
 ## Submission readiness
 

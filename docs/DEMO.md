@@ -2,6 +2,8 @@
 
 This script is intentionally split between the local product demo available now and the testnet recording required after deployment. Do not splice local receipts into the video as though they were block-explorer evidence.
 
+The official ETHOnline 2026 rule is a builder-narrated video between 2 and 4 minutes, exported at 720p or better. Do not speed it up, use an AI voiceover, or substitute music and on-screen text for narration.
+
 ## 0:00–0:20 — Problem and boundary
 
 Open the app. State: “PFDA auctions a temporary right to skip a 5 bp application surcharge. It does not remove the Uniswap LP fee or a native protocol fee.” Point to the side-by-side scenario runner and the retained 25 bp LP fee.
@@ -34,3 +36,12 @@ Keep each explorer URL visible long enough to read and add it to the showcase de
 ## 2:40–3:00 — Limitations and next step
 
 State the MVP scope: one ERC-20/ERC-20 pool, fully filled exact-input swaps, MockUSDC bids, no native-fee waiver, and no live Harberger lease. Close with the deployment and feedback links from the README.
+
+## Recording and upload gate
+
+- Record a desktop browser at 1280×720 or higher; do not use a phone recording.
+- Use the builder's natural narration and keep the introduction under 20 seconds.
+- Edit out wallet-confirmation and chain waiting time without changing playback speed.
+- Keep private keys, salts, vault passwords, recovery files, email, Telegram, and wallet extension account details out of frame.
+- Verify the final file duration is between 2:00 and 4:00 and the exported height is at least 720 pixels.
+- Upload the video, open the final public URL in a signed-out window, then add it to `docs/SUBMISSION.md` and the ETHGlobal project.
