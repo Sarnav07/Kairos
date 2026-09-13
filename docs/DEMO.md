@@ -1,47 +1,40 @@
-# Three-minute demo script
+# Kairos 3:55 real-testnet demo
 
-This script is intentionally split between the local product demo available now and the testnet recording required after deployment. Do not splice local receipts into the video as though they were block-explorer evidence.
+This is a silent visual-capture script for a later builder voice-over. Record the longer real rehearsal at desktop 1280×720 or higher, then make cut-only edits in iMovie. Never speed up footage or represent a local simulator receipt as a network transaction.
 
-The official ETHOnline 2026 rule is a builder-narrated video between 2 and 4 minutes, exported at 720p or better. Do not speed it up, use an AI voiceover, or substitute music and on-screen text for narration.
+## Fixed rehearsal terms
 
-## 0:00–0:20 — Problem and boundary
+| Setting | Value |
+| --- | --- |
+| Commit start delay | 5 minutes |
+| Commit window | 8 minutes |
+| Reveal window | 8 minutes |
+| Activation delay | 30 minutes |
+| Active-right window | 10 minutes |
+| Bond / minimum bid | 1 / 10 mUSDC |
+| Bidder A / Bidder B | 15 / 12 mUSDC |
+| Test swaps | 100 KRA → KRB per bidder |
 
-Open the app. State: “PFDA auctions a temporary right to skip a 5 bp application surcharge. It does not remove the Uniswap LP fee or a native protocol fee.” Point to the side-by-side scenario runner and the retained 25 bp LP fee.
+The two bidder wallets must be funded with Unichain Sepolia ETH before scheduling. The Live Desk permissionlessly mints valueless 50 mUSDC and 1,000 KRA test balances; it uses standard ERC-20 approvals on the verified deployment.
 
-## 0:20–0:55 — Sealed bid safety
+## Final edit timeline
 
-Set a bid amount, create the recovery file, download it, then recover it. Explain that the commitment binds the chain, auction, bidder, bid amount and salt. Show the warning that a missing secret cannot be revealed.
+| Time | Capture | Required visible evidence |
+| --- | --- | --- |
+| 0:00–0:16 | Open Kairos and the verified runtime rail. | Unichain Sepolia, KRA/KRB, and the boundary that only the 5 bp app surcharge is waived. |
+| 0:16–0:43 | Connect the immutable deployer, keep the fixed terms visible, then create the auction. | Confirmed schedule receipt and fixed deadlines in the dashboard. |
+| 0:43–1:14 | Bidder A mints mUSDC, prepares/encrypts a secret, approves the 1 mUSDC bond, and commits. | Bidder A’s confirmed receipt, then dashboard count of two commitments after Bidder B completes the same path off-cut. |
+| 1:14–1:44 | Bidder A approves and reveals the sealed bid. | Dashboard count of two reveals after Bidder B reveals off-cut. |
+| 1:44–2:18 | After the real reveal deadline, finalize; Bidder B claims its refund; deployer collects proceeds. | Three resolved receipts and the dashboard’s settlement state. |
+| 2:18–2:54 | During the active window, mint/approve KRA and execute the fixed 100 KRA swap first as Bidder A, then Bidder B. | One discounted executor receipt, one ordinary executor receipt, and the app-surcharge distinction. |
+| 2:54–3:31 | Show completed dashboard checklist and Protocol Economics Terminal. | Preserved 25 bp LP fee, 5 bp application surcharge difference, break-even and sensitivity. |
+| 3:31–3:55 | Show source/live links and final MVP boundary. | Testnet-only scope, exact-input ERC-20/ERC-20 path, no native-fee waiver, no live Harberger lease. |
 
-## 0:55–1:30 — Auction lifecycle
+## Capture gate
 
-Use the demo clock to simulate commit, reveal, settlement, loser refund and active window. Read the receipt labels aloud: they are local simulation, not network transactions. Explain that equal bids use commitment order and that non-reveals forfeit only the fixed bond.
-
-## 1:30–2:05 — Authenticated fee privilege
-
-Show the scenario runner: ordinary caller versus active PFDA winner. Explain that both pay the LP fee; only the app surcharge is zero for the winner. Point to the code map in the README and the real-v4 integration test.
-
-## 2:05–2:40 — Testnet rehearsal (record only after broadcast)
-
-Replace this segment with a real Unichain Sepolia explorer walkthrough:
-
-1. Deployed auction, executor and CREATE2-mined hook addresses.
-2. Two bidder commitments and reveals.
-3. Finalization, loser refund, and proceeds received by the deployer wallet.
-4. Winner swap via PFDAExecutor and an ordinary comparison swap.
-
-Before opening individual explorer pages, load the same auction ID in the app's **Live evidence dashboard**. It should show the phase and fixed deadline, event tape, treasury/refund state, and check off rehearsal rows only when the corresponding receipts are visible. The dashboard is a bounded recent-RPC view, so keep the auction and recording within the evidence window.
-
-Keep each explorer URL visible long enough to read and add it to the showcase description.
-
-## 2:40–3:00 — Limitations and next step
-
-State the MVP scope: one ERC-20/ERC-20 pool, fully filled exact-input swaps, MockUSDC bids, no native-fee waiver, and no live Harberger lease. Close with the deployment and feedback links from the README.
-
-## Recording and upload gate
-
-- Record a desktop browser at 1280×720 or higher; do not use a phone recording.
-- Use the builder's natural narration and keep the introduction under 20 seconds.
-- Edit out wallet-confirmation and chain waiting time without changing playback speed.
-- Keep private keys, salts, vault passwords, recovery files, email, Telegram, and wallet extension account details out of frame.
-- Verify the final file duration is between 2:00 and 4:00 and the exported height is at least 720 pixels.
-- Upload the video, open the final public URL in a signed-out window, then add it to `docs/SUBMISSION.md` and the ETHGlobal project.
+- Record with microphone disabled. The human builder adds narration after the visual edit.
+- Cut wallet-confirmation waits and deadline waits only; do not alter action order or playback speed.
+- Keep private keys, seed phrases, vault passwords, salts, recovery-file contents, browser profiles, and unredacted wallet-extension details out of frame.
+- Open every transaction in Uniscan before its clip appears in the final edit.
+- Stop and restart the rehearsal if a phase is missed, a transaction fails, the dashboard disagrees with explorer state, or a private value is exposed.
+- Export `kairos-demo-3m55.mov`, verify a duration of exactly 3:55 at 720p or higher, then add the final public video URL to the ETHGlobal project.

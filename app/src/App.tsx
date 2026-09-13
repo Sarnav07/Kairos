@@ -14,18 +14,33 @@ import {
 import {
   addressesMatch,
   approveBidToken,
+  approveTestSwapInput,
   collectProceeds,
   commitBid,
   createAuction,
+  executeTestSwap,
+  finalizeAuction,
+  mintBidToken,
+  mintTestSwapInput,
   permitAndCommitBid,
   permitAndRevealBid,
   readBidPreflight,
   readNextAuctionId,
+  readTestSwapPreflight,
   revealBid,
   withdrawRefund,
   type BidPreflight,
+  type TestSwapPreflight,
 } from './lib/contracts'
 import { buildSchedule, parseUsdc, requiredAllowance, type OperatorDurations } from './lib/auction'
+import {
+  canExecuteTestSwap,
+  canFinalizeAuction,
+  isDiscountedWinner,
+  MOCK_USDC_MINT_AMOUNT,
+  TEST_SWAP_INPUT_AMOUNT,
+  TEST_SWAP_MINT_AMOUNT,
+} from './lib/live-demo'
 import {
   decryptBidSecret,
   encryptBidSecret,
@@ -77,6 +92,7 @@ type ProtocolState = {
 }
 
 type TransactionState = { label: string; hash: Hex } | null
+type TestSwapResult = { hash: Hex; output: bigint; discounted: boolean } | null
 
 type DashboardState =
   | { status: 'idle' | 'loading' | 'empty' | 'error'; snapshot: null; message?: string }
@@ -114,6 +130,8 @@ function App() {
   const [protocol, setProtocol] = useState<ProtocolState>({ status: 'loading', snapshot: null })
   const [liveAuctionId, setLiveAuctionId] = useState('1')
   const [bidPreflight, setBidPreflight] = useState<BidPreflight | null>(null)
+  const [testSwapPreflight, setTestSwapPreflight] = useState<TestSwapPreflight | null>(null)
+  const [testSwapResult, setTestSwapResult] = useState<TestSwapResult>(null)
   const [liveSecret, setLiveSecret] = useState<BidSecret | null>(null)
   const [vaultPassword, setVaultPassword] = useState('')
   const [vaultRecords, setVaultRecords] = useState<EncryptedBidSecret[]>(() => (
@@ -123,8 +141,8 @@ function App() {
   const [liveNotice, setLiveNotice] = useState('Connect a Unichain Sepolia wallet, then load a scheduled auction.')
   const [transaction, setTransaction] = useState<TransactionState>(null)
   const [operatorDurations, setOperatorDurations] = useState<OperatorDurations>({
-    commitDelayMinutes: 5, commitDurationMinutes: 20, revealDurationMinutes: 20,
-    activationDelayMinutes: 35, rightDurationMinutes: 30,
+    commitDelayMinutes: 5, commitDurationMinutes: 8, revealDurationMinutes: 8,
+    activationDelayMinutes: 30, rightDurationMinutes: 10,
   })
   const [operatorBond, setOperatorBond] = useState('1')
   const [operatorMinimumBid, setOperatorMinimumBid] = useState('10')
@@ -242,10 +260,40 @@ function App() {
     try {
       const next = await readBidPreflight(BigInt(liveAuctionId), connectedAddress)
       setBidPreflight(next)
+      void loadTestSwapPreflight()
       setLiveNotice(`Auction #${liveAuctionId} loaded. ${phaseLabel(next.phase)} is the current on-chain phase.`)
     } catch {
       setBidPreflight(null)
       setLiveNotice(`Auction #${liveAuctionId} is not available yet. The deployer must schedule it first.`)
+    }
+  }
+
+  async function loadTestSwapPreflight() {
+    if (!connectedAddress) {
+      setTestSwapPreflight(null)
+      return
+    }
+    try {
+      const next = await readTestSwapPreflight(BigInt(liveAuctionId), connectedAddress)
+      setTestSwapPreflight(next)
+    } catch {
+      setTestSwapPreflight(null)
+    }
+  }
+
+  async function refreshLivePreflights(auctionId = liveAuctionId) {
+    if (!connectedAddress) return
+    try {
+      const id = BigInt(auctionId)
+      const [bid, swap] = await Promise.all([
+        readBidPreflight(id, connectedAddress),
+        readTestSwapPreflight(id, connectedAddress),
+      ])
+      setBidPreflight(bid)
+      setTestSwapPreflight(swap)
+    } catch {
+      setBidPreflight(null)
+      setTestSwapPreflight(null)
     }
   }
 
@@ -367,10 +415,106 @@ function App() {
       } else hash = await withdrawRefund(provider, connectedAddress, auctionId)
       setTransaction({ label: action.replace('-', ' '), hash })
       setLiveNotice('Transaction confirmed on Unichain Sepolia.')
-      await loadBidPreflight()
+      await refreshLivePreflights()
       await loadDashboard()
     } catch (error) {
       setLiveNotice(error instanceof Error ? error.message : 'The wallet transaction could not be completed.')
+    }
+  }
+
+  async function mintLiveBidToken() {
+    const provider = getInjectedProvider()
+    if (!provider || !connectedAddress) {
+      setLiveNotice('Connect a wallet on Unichain Sepolia before minting test mUSDC.')
+      return
+    }
+    try {
+      const hash = await mintBidToken(provider, connectedAddress)
+      setTransaction({ label: `mint ${formatUsdc(MOCK_USDC_MINT_AMOUNT)}`, hash })
+      setLiveNotice('50.00 mUSDC minted to the connected testnet wallet.')
+      await refreshLivePreflights()
+    } catch (error) {
+      setLiveNotice(error instanceof Error ? error.message : 'The test mUSDC mint could not be completed.')
+    }
+  }
+
+  async function finalizeLiveAuction() {
+    const provider = getInjectedProvider()
+    if (!provider || !connectedAddress || !bidPreflight) {
+      setLiveNotice('Load the auction from a connected wallet before finalizing it.')
+      return
+    }
+    if (!canFinalizeAuction(bidPreflight.phase)) {
+      setLiveNotice('Finalization is available only after reveal closes and before activation.')
+      return
+    }
+    try {
+      const hash = await finalizeAuction(provider, connectedAddress, BigInt(liveAuctionId))
+      setTransaction({ label: 'finalize auction', hash })
+      setLiveNotice('Auction finalization confirmed on Unichain Sepolia.')
+      await refreshLivePreflights()
+      await loadDashboard()
+    } catch (error) {
+      setLiveNotice(error instanceof Error ? error.message : 'The auction finalization could not be completed.')
+    }
+  }
+
+  async function mintLiveTestSwapInput() {
+    const provider = getInjectedProvider()
+    if (!provider || !connectedAddress) {
+      setLiveNotice('Connect a wallet on Unichain Sepolia before minting test KRA.')
+      return
+    }
+    try {
+      const hash = await mintTestSwapInput(provider, connectedAddress)
+      setTransaction({ label: `mint ${formatTradeToken(TEST_SWAP_MINT_AMOUNT)} KRA`, hash })
+      setLiveNotice('1,000 KRA minted to the connected testnet wallet.')
+      await refreshLivePreflights()
+    } catch (error) {
+      setLiveNotice(error instanceof Error ? error.message : 'The test KRA mint could not be completed.')
+    }
+  }
+
+  async function approveLiveTestSwapInput() {
+    const provider = getInjectedProvider()
+    if (!provider || !connectedAddress) {
+      setLiveNotice('Connect a wallet on Unichain Sepolia before approving the executor.')
+      return
+    }
+    try {
+      const hash = await approveTestSwapInput(provider, connectedAddress)
+      setTransaction({ label: `approve ${formatTradeToken(TEST_SWAP_INPUT_AMOUNT)} KRA`, hash })
+      setLiveNotice('The executor received the exact 100 KRA test-swap allowance.')
+      await refreshLivePreflights()
+    } catch (error) {
+      setLiveNotice(error instanceof Error ? error.message : 'The test-swap approval could not be completed.')
+    }
+  }
+
+  async function runLiveTestSwap() {
+    const provider = getInjectedProvider()
+    if (!provider || !connectedAddress || !testSwapPreflight) {
+      setLiveNotice('Load the auction and test-swap preflight from a connected wallet first.')
+      return
+    }
+    if (!canExecuteTestSwap(testSwapPreflight.phase)) {
+      setLiveNotice('The KRA to KRB test swap is available only while the auction right is active.')
+      return
+    }
+    if (testSwapPreflight.balance < TEST_SWAP_INPUT_AMOUNT || testSwapPreflight.allowance < TEST_SWAP_INPUT_AMOUNT) {
+      setLiveNotice('Mint test KRA and approve the exact 100 KRA executor allowance before swapping.')
+      return
+    }
+    try {
+      const discounted = isDiscountedWinner(testSwapPreflight.auction.winner, connectedAddress)
+      const result = await executeTestSwap(provider, connectedAddress, BigInt(liveAuctionId))
+      setTestSwapResult({ ...result, discounted })
+      setTransaction({ label: discounted ? 'discounted test swap' : 'ordinary test swap', hash: result.hash })
+      setLiveNotice(`Test swap confirmed. ${discounted ? 'The active winner received the app-surcharge waiver.' : 'The ordinary caller paid the app surcharge.'}`)
+      await refreshLivePreflights()
+      await loadDashboard()
+    } catch (error) {
+      setLiveNotice(error instanceof Error ? error.message : 'The KRA to KRB test swap could not be completed.')
     }
   }
 
@@ -387,8 +531,11 @@ function App() {
       const hash = await createAuction(provider, connectedAddress, schedule, parseUsdc(operatorBond), parseUsdc(operatorMinimumBid))
       setLiveAuctionId(nextAuctionId.toString())
       setBidPreflight(null)
+      setTestSwapPreflight(null)
+      setTestSwapResult(null)
       setTransaction({ label: `schedule auction #${nextAuctionId}`, hash })
       setLiveNotice(`Auction #${nextAuctionId} was scheduled. Load it to begin bidder preflight.`)
+      await refreshLivePreflights(nextAuctionId.toString())
       await loadDashboard(nextAuctionId.toString())
     } catch (error) {
       setLiveNotice(error instanceof Error ? error.message : 'The auction schedule transaction could not be completed.')
@@ -405,6 +552,7 @@ function App() {
       const hash = await collectProceeds(provider, connectedAddress)
       setTransaction({ label: 'collect proceeds', hash })
       setLiveNotice('Proceeds collection confirmed on Unichain Sepolia.')
+      await refreshLivePreflights()
       await loadDashboard()
     } catch (error) {
       setLiveNotice(error instanceof Error ? error.message : 'No collectible proceeds are available yet.')
@@ -666,7 +814,7 @@ function App() {
       <section id="evidence" className="dashboard-section" aria-label="Live auction dashboard">
         <div className="dashboard-heading">
           <div><p className="eyebrow">Live evidence dashboard</p><h2>The auction tape tells the story.</h2></div>
-          <div className="dashboard-load"><label htmlFor="dashboard-auction-id">Auction ID<input id="dashboard-auction-id" inputMode="numeric" min="1" onChange={(event) => { setLiveAuctionId(event.target.value); setBidPreflight(null); setLiveSecret(null); setDashboard({ status: 'idle', snapshot: null }) }} type="number" value={liveAuctionId} /></label><button className="button outline" onClick={() => loadDashboard()} type="button">{dashboard.status === 'loading' ? 'Loading…' : 'Load evidence'}</button></div>
+          <div className="dashboard-load"><label htmlFor="dashboard-auction-id">Auction ID<input id="dashboard-auction-id" inputMode="numeric" min="1" onChange={(event) => { setLiveAuctionId(event.target.value); setBidPreflight(null); setTestSwapPreflight(null); setTestSwapResult(null); setLiveSecret(null); setDashboard({ status: 'idle', snapshot: null }) }} type="number" value={liveAuctionId} /></label><button className="button outline" onClick={() => loadDashboard()} type="button">{dashboard.status === 'loading' ? 'Loading…' : 'Load evidence'}</button></div>
         </div>
         {dashboard.status === 'ready' ? <DashboardView snapshot={dashboard.snapshot} nowSeconds={BigInt(Math.floor(dashboardNow / 1_000))} /> : (
           <div className={`dashboard-empty ${dashboard.status}`}><span className="step-cap">{dashboard.status === 'loading' ? 'Reading Unichain Sepolia' : 'Evidence status'}</span><strong>{dashboard.status === 'loading' ? 'Loading the auction state and recent event window…' : dashboard.message ?? 'Enter an auction ID to load its live state, receipts, and rehearsal evidence.'}</strong><small>This dashboard is read-only. It indexes the most recent on-chain evidence window, not a permanent analytics service.</small></div>
@@ -679,7 +827,7 @@ function App() {
           <h2>Commit only what you can reveal.</h2>
           <p className="panel-copy">Each button opens your connected wallet. The app asks for exact allowance amounts; it never stores a wallet key or raw secret in local storage.</p>
           <div className="auction-load-row">
-            <label htmlFor="live-auction-id">Auction ID<input id="live-auction-id" inputMode="numeric" min="1" onChange={(event) => { setLiveAuctionId(event.target.value); setBidPreflight(null); setLiveSecret(null); setDashboard({ status: 'idle', snapshot: null }) }} type="number" value={liveAuctionId} /></label>
+            <label htmlFor="live-auction-id">Auction ID<input id="live-auction-id" inputMode="numeric" min="1" onChange={(event) => { setLiveAuctionId(event.target.value); setBidPreflight(null); setTestSwapPreflight(null); setTestSwapResult(null); setLiveSecret(null); setDashboard({ status: 'idle', snapshot: null }) }} type="number" value={liveAuctionId} /></label>
             <button className="button outline" onClick={loadBidPreflight} type="button">Load live auction</button>
           </div>
           {bidPreflight ? (
@@ -687,6 +835,7 @@ function App() {
               <span><b>Phase</b>{phaseLabel(bidPreflight.phase)}</span><span><b>Bond</b>{formatUsdc(bidPreflight.auction.bond)}</span><span><b>Minimum</b>{formatUsdc(bidPreflight.auction.minimumBid)}</span><span><b>Balance</b>{formatUsdc(bidPreflight.balance)}</span><span><b>Allowance</b>{formatUsdc(bidPreflight.allowance)}</span>
             </div>
           ) : <p className="empty-live">No auction loaded. Scheduling remains a separate deployer action.</p>}
+          <div className="live-faucet"><div><span className="step-cap">Testnet bid balance</span><small>Permissionless mint · valueless mUSDC</small></div><button className="button ghost" disabled={!connectedAddress} onClick={mintLiveBidToken} type="button">Mint 50 mUSDC</button></div>
           {bidPreflight && <div className={`permit-slip ${bidPreflight.permit.status}`}>
             <div><span className="step-cap">Signature authorization</span><strong>{bidPreflight.permit.status === 'available' ? 'ERC-2612 available' : 'Standard approval required'}</strong></div>
             <p>{bidPreflight.permit.status === 'available'
@@ -736,8 +885,24 @@ function App() {
             <label htmlFor="operator-minimum">Minimum bid (MockUSDC)<input id="operator-minimum" inputMode="decimal" onChange={(event) => setOperatorMinimumBid(event.target.value)} value={operatorMinimumBid} /></label>
           </div>
           <p className="operator-pool">Pool ID <code>{shortHash(liveContracts.poolId)}</code> · activation wait must remain at least 30 minutes.</p>
-          <div className="operator-actions"><button className="button ink" disabled={!isOperator} onClick={scheduleLiveAuction} type="button">Create fixed auction</button><button className="button ghost" disabled={!isOperator} onClick={collectLiveProceeds} type="button">Collect proceeds</button></div>
+          <div className="operator-actions"><button className="button ink" disabled={!isOperator} onClick={scheduleLiveAuction} type="button">Create fixed auction</button><button className="button outline" disabled={!bidPreflight || !canFinalizeAuction(bidPreflight.phase)} onClick={finalizeLiveAuction} type="button">Finalize auction</button><button className="button ghost" disabled={!isOperator} onClick={collectLiveProceeds} type="button">Collect proceeds</button></div>
           {!isOperator && <p className="operator-lock">Connect the immutable deployer wallet to unlock these controls.</p>}
+        </article>
+
+        <article className="live-panel test-swap-panel">
+          <div className="panel-topline"><p className="eyebrow">Verified pool execution</p><span className="live-tag">KRA → KRB · EXACT INPUT</span></div>
+          <h2>Prove the fee right at the executor.</h2>
+          <p className="panel-copy">This fixed testnet path uses the verified KRA/KRB pool, 25 bp LP fee, and 5 bp application surcharge. The active winner alone receives the surcharge waiver.</p>
+          {testSwapPreflight ? <div className="swap-preflight-grid">
+            <span><b>Phase</b>{phaseLabel(testSwapPreflight.phase)}</span><span><b>KRA balance</b>{formatTradeToken(testSwapPreflight.balance)} KRA</span><span><b>Executor allowance</b>{formatTradeToken(testSwapPreflight.allowance)} KRA</span><span><b>Pool fee</b>25 bp LP + 5 bp app</span>
+          </div> : <p className="empty-live">Load a scheduled auction to check the fixed KRA → KRB test-swap path.</p>}
+          <div className="test-swap-actions">
+            <button className="button ghost" disabled={!connectedAddress} onClick={mintLiveTestSwapInput} type="button">Mint 1,000 KRA</button>
+            <button className="button outline" disabled={!connectedAddress} onClick={approveLiveTestSwapInput} type="button">Approve 100 KRA</button>
+            <button className="button coral" disabled={!testSwapPreflight || !canExecuteTestSwap(testSwapPreflight.phase) || testSwapPreflight.balance < TEST_SWAP_INPUT_AMOUNT || testSwapPreflight.allowance < TEST_SWAP_INPUT_AMOUNT} onClick={runLiveTestSwap} type="button">Execute 100 KRA swap</button>
+          </div>
+          <p className="test-swap-boundary">Testnet-only, fixed KRA → KRB exact-input route. Minimum output is one atomic KRB unit for this valueless demonstration—not an execution quote or slippage setting.</p>
+          {testSwapResult && <div className={`test-swap-result ${testSwapResult.discounted ? 'discounted' : 'ordinary'}`}><span>{testSwapResult.discounted ? 'ACTIVE WINNER · APP SURCHARGE WAIVED' : 'ORDINARY CALLER · APP SURCHARGE APPLIED'}</span><strong>{formatTradeToken(testSwapResult.output)} KRB received</strong><a href={explorerTransaction(testSwapResult.hash)} rel="noreferrer" target="_blank">Open confirmed executor receipt ↗</a></div>}
         </article>
       </section>
       <section className="transaction-strip" aria-live="polite">
@@ -985,6 +1150,10 @@ function phaseLabel(phase: number): string {
 
 function formatUsdc(value: bigint): string {
   return `${formatUnits(value, 6)} MockUSDC`
+}
+
+function formatTradeToken(value: bigint): string {
+  return formatUnits(value, 18)
 }
 
 function formatTimestamp(timestamp: bigint): string {

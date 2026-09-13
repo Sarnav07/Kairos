@@ -28,20 +28,11 @@ Then follow this checklist in order. Keep the app’s **Live evidence dashboard*
 ## Rehearsal sequence
 
 1. **Preflight.** Load `.env` locally, verify `CHAIN_ID=1301`, public addresses, and `PFDA_POOL_ID`. Run the app and connect the operator wallet. Use the app’s operator panel to confirm it recognizes the immutable deployer.
-2. **Schedule.** Review the timings in `.env` before broadcasting. The defaults are 5 minutes to commit start, 20-minute commit and reveal windows, a 35-minute activation delay, and a 30-minute active right. Schedule once:
-
-   ```sh
-   set -a
-   source .env
-   set +a
-   forge script script/SchedulePFDAAuction.s.sol:SchedulePFDAAuction --rpc-url "$RPC_URL" --broadcast -vvvv
-   ```
-
-   Copy the printed auction ID and schedule transaction URL into the recording notes. Do not schedule a duplicate auction for the same pool while this window is reserved.
-3. **Approve and commit.** Each bidder switches to Unichain Sepolia in the app, mints or obtains demonstration MockUSDC as appropriate, approves the exact commitment bond, generates and downloads its recovery file, and submits a commitment before commit end. Record both transaction URLs without revealing either amount or salt.
+2. **Schedule.** Use the app’s verified operator panel and set 5 minutes to commit start, 8-minute commit and reveal windows, a 30-minute activation delay, a 10-minute active right, a 1 mUSDC bond, and a 10 mUSDC minimum. Create the auction once. Copy its transaction URL and emitted auction ID into the recording notes. Do not schedule a duplicate auction for the same pool while this window is reserved.
+3. **Approve and commit.** Each bidder switches to Unichain Sepolia in the app, uses the permissionless 50 mUSDC testnet mint, approves the exact commitment bond, generates and downloads its recovery file, and submits a commitment before commit end. Record both transaction URLs without revealing either amount or salt.
 4. **Reveal.** Each bidder imports its own encrypted recovery record, verifies the commitment, approves the exact bid amount when needed, and reveals before reveal end. Record both receipt URLs and the dashboard’s reveal count.
 5. **Finalize and settle.** After reveal end and before activation, anyone finalizes. The losing bidder withdraws its refund; the operator collects proceeds. Record finalization, refund, and proceeds receipt URLs, and confirm the deployed recipient address in the app/explorer.
-6. **Compare swaps during the active window.** The winner uses `PFDAExecutor` for one supported exact-input KRA/KRB swap. A non-winner then executes the same supported path. Record both executor receipts and the hook surcharge receipt; the winner’s app surcharge is zero and the ordinary caller pays it. Keep the pool LP fee visible in the app/explorer context.
+6. **Compare swaps during the active window.** Each bidder uses the Live Desk’s permissionless KRA test mint, exact 100 KRA executor approval, and fixed KRA → KRB test swap. Record both executor receipts and the hook surcharge receipt; the winner’s app surcharge is zero and the ordinary caller pays it. Keep the 25 bp pool LP fee visible in the app/explorer context.
 7. **Evidence and video.** Add only the opened, resolved receipt URLs to [EVIDENCE.md](EVIDENCE.md), update the manifest/status documents truthfully, then record [DEMO.md](DEMO.md). Submit the feedback form only after the public `FEEDBACK.md` URL resolves.
 
 ## Stop conditions

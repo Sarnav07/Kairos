@@ -1,4 +1,11 @@
-import { createWalletClient, custom, getAddress, parseSignature, zeroHash, type Address, type Hex } from 'viem'
+import { createWalletClient, custom, decodeEventLog, getAddress, parseSignature, zeroHash, type Address, type Hex } from 'viem'
+import {
+  buildTestSwapArgs,
+  MOCK_USDC_MINT_AMOUNT,
+  TEST_SWAP_INPUT_AMOUNT,
+  TEST_SWAP_MINT_AMOUNT,
+  testSwapInputToken,
+} from './live-demo'
 import { liveContracts, publicClient, unichainSepolia, type Eip1193Provider } from './testnet'
 
 const scheduleComponents = [
@@ -32,6 +39,7 @@ export const auctionAbi = [
   { type: 'function', name: 'revealWithPermit', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }, { name: 'amount', type: 'uint128' }, { name: 'salt', type: 'bytes32' }, { name: 'deadline', type: 'uint256' }, { name: 'v', type: 'uint8' }, { name: 'r', type: 'bytes32' }, { name: 's', type: 'bytes32' }], outputs: [] },
   { type: 'function', name: 'permitAuthorizationVersion', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint8' }] },
   { type: 'function', name: 'withdrawRefund', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }], outputs: [] },
+  { type: 'function', name: 'finalize', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }], outputs: [] },
   { type: 'function', name: 'collectProceeds', stateMutability: 'nonpayable', inputs: [], outputs: [] },
   {
     type: 'function', name: 'createAuction', stateMutability: 'nonpayable', inputs: [
@@ -66,6 +74,24 @@ const erc20Abi = [
   { type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] },
   { type: 'function', name: 'allowance', stateMutability: 'view', inputs: [{ type: 'address' }, { type: 'address' }], outputs: [{ type: 'uint256' }] },
   { type: 'function', name: 'approve', stateMutability: 'nonpayable', inputs: [{ type: 'address' }, { type: 'uint256' }], outputs: [{ type: 'bool' }] },
+  { type: 'function', name: 'mint', stateMutability: 'nonpayable', inputs: [{ name: 'recipient', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [] },
+] as const
+
+const executorAbi = [
+  { type: 'event', name: 'SwapExecuted', inputs: [{ name: 'auctionId', type: 'uint256', indexed: true }, { name: 'bidder', type: 'address', indexed: true }, { name: 'poolId', type: 'bytes32', indexed: true }, { name: 'discounted', type: 'bool', indexed: false }, { name: 'output', type: 'uint256', indexed: false }] },
+  {
+    type: 'function', name: 'swap', stateMutability: 'nonpayable', inputs: [
+      { name: 'auctionId', type: 'uint256' },
+      { name: 'key', type: 'tuple', components: [
+        { name: 'currency0', type: 'address' }, { name: 'currency1', type: 'address' },
+        { name: 'fee', type: 'uint24' }, { name: 'tickSpacing', type: 'int24' }, { name: 'hooks', type: 'address' },
+      ] },
+      { name: 'params', type: 'tuple', components: [
+        { name: 'zeroForOne', type: 'bool' }, { name: 'amountSpecified', type: 'int256' }, { name: 'sqrtPriceLimitX96', type: 'uint160' },
+      ] },
+      { name: 'minimumOutput', type: 'uint256' }, { name: 'deadline', type: 'uint256' },
+    ], outputs: [{ name: 'output', type: 'uint256' }],
+  },
 ] as const
 
 const permitAbi = [
@@ -111,6 +137,13 @@ export type BidPreflight = {
   permit: PermitSupport
 }
 
+export type TestSwapPreflight = {
+  auction: LiveAuction
+  phase: number
+  balance: bigint
+  allowance: bigint
+}
+
 export async function readBidPreflight(auctionId: bigint, bidder: Address): Promise<BidPreflight> {
   const [auction, phase, balance, allowance] = await Promise.all([
     readAuction(auctionId),
@@ -120,6 +153,17 @@ export async function readBidPreflight(auctionId: bigint, bidder: Address): Prom
   ])
   const permit = await readPermitSupport(bidder)
   return { auction, phase: Number(phase), balance, allowance, permit }
+}
+
+export async function readTestSwapPreflight(auctionId: bigint, bidder: Address): Promise<TestSwapPreflight> {
+  const inputToken = testSwapInputToken()
+  const [auction, phase, balance, allowance] = await Promise.all([
+    readAuction(auctionId),
+    publicClient.readContract({ address: liveContracts.auction, abi: auctionAbi, functionName: 'phase', args: [auctionId] }),
+    publicClient.readContract({ address: inputToken, abi: erc20Abi, functionName: 'balanceOf', args: [bidder] }),
+    publicClient.readContract({ address: inputToken, abi: erc20Abi, functionName: 'allowance', args: [bidder, liveContracts.executor] }),
+  ])
+  return { auction, phase: Number(phase), balance, allowance }
 }
 
 async function readPermitSupport(bidder: Address): Promise<PermitSupport> {
@@ -154,6 +198,18 @@ export async function readNextAuctionId(): Promise<bigint> {
 
 export async function approveBidToken(provider: Eip1193Provider, account: Address, amount: bigint): Promise<Hex> {
   return send(provider, account, liveContracts.mockUsdc, erc20Abi, 'approve', [liveContracts.auction, amount])
+}
+
+export async function mintBidToken(provider: Eip1193Provider, account: Address): Promise<Hex> {
+  return send(provider, account, liveContracts.mockUsdc, erc20Abi, 'mint', [account, MOCK_USDC_MINT_AMOUNT])
+}
+
+export async function mintTestSwapInput(provider: Eip1193Provider, account: Address): Promise<Hex> {
+  return send(provider, account, testSwapInputToken(), erc20Abi, 'mint', [account, TEST_SWAP_MINT_AMOUNT])
+}
+
+export async function approveTestSwapInput(provider: Eip1193Provider, account: Address): Promise<Hex> {
+  return send(provider, account, testSwapInputToken(), erc20Abi, 'approve', [liveContracts.executor, TEST_SWAP_INPUT_AMOUNT])
 }
 
 export async function commitBid(provider: Eip1193Provider, account: Address, auctionId: bigint, commitment: Hex): Promise<Hex> {
@@ -196,6 +252,10 @@ export async function withdrawRefund(provider: Eip1193Provider, account: Address
   return send(provider, account, liveContracts.auction, auctionAbi, 'withdrawRefund', [auctionId])
 }
 
+export async function finalizeAuction(provider: Eip1193Provider, account: Address, auctionId: bigint): Promise<Hex> {
+  return send(provider, account, liveContracts.auction, auctionAbi, 'finalize', [auctionId])
+}
+
 export async function collectProceeds(provider: Eip1193Provider, account: Address): Promise<Hex> {
   return send(provider, account, liveContracts.auction, auctionAbi, 'collectProceeds', [])
 }
@@ -210,11 +270,31 @@ export async function createAuction(
   return send(provider, account, liveContracts.auction, auctionAbi, 'createAuction', [liveContracts.poolId, schedule, bond, minimumBid])
 }
 
+export async function executeTestSwap(provider: Eip1193Provider, account: Address, auctionId: bigint): Promise<{ hash: Hex; output: bigint }> {
+  const block = await publicClient.getBlock()
+  const client = createWalletClient({ account, chain: unichainSepolia, transport: custom(provider as never) })
+  const hash = await client.writeContract({
+    address: liveContracts.executor,
+    abi: executorAbi,
+    functionName: 'swap',
+    args: buildTestSwapArgs(auctionId, block.timestamp),
+  })
+  const receipt = await publicClient.waitForTransactionReceipt({ hash })
+  if (receipt.status !== 'success') throw new Error('The test swap did not succeed on Unichain Sepolia.')
+  const event = receipt.logs.find((log) => log.address.toLowerCase() === liveContracts.executor.toLowerCase())
+  if (!event) throw new Error('The confirmed swap receipt did not contain an executor event.')
+  const decoded = decodeEventLog({ abi: executorAbi, data: event.data, topics: event.topics })
+  if (decoded.eventName !== 'SwapExecuted' || typeof decoded.args.output !== 'bigint') {
+    throw new Error('The confirmed swap receipt did not include its output amount.')
+  }
+  return { hash: receipt.transactionHash, output: decoded.args.output }
+}
+
 async function send(
   provider: Eip1193Provider,
   account: Address,
   address: Address,
-  abi: typeof auctionAbi | typeof erc20Abi | typeof permitAbi,
+  abi: typeof auctionAbi | typeof erc20Abi | typeof permitAbi | typeof executorAbi,
   functionName: string,
   args: readonly unknown[],
 ): Promise<Hex> {
