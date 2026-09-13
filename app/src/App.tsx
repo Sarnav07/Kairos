@@ -845,43 +845,64 @@ function App() {
         </aside>
       </section>
 
-      <section id="economics" className="model-section" aria-labelledby="model-title">
-        <div className="model-heading">
-          <p className="eyebrow">Scenario runner</p>
-          <h2 id="model-title">What the right changes — and what it does not.</h2>
-          <p>This is a simplified arithmetic model, not a price quote or execution guarantee. It isolates the app-level surcharge implemented by the hook.</p>
-        </div>
-        <div className="model-controls">
-          <label htmlFor="gross-input">Trade input <input id="gross-input" inputMode="decimal" min="0" onChange={(event) => setGrossInput(event.target.value)} type="number" value={grossInput} /> <span>USDC</span></label>
-          <div className="model-rates"><span>LP fee <b>25 bp</b></span><span>App surcharge <b>5 bp</b></span></div>
-        </div>
-        <div className="comparison">
-          <FeeCard caption="Ordinary caller" result={ordinary} tone="ordinary" />
-          <div className="waiver-arrow"><span>PFDA<br />right</span><b>−{displayUsdc(ordinary.surchargeUsdc - winner.surchargeUsdc)}</b><small>USDC surcharge</small></div>
-          <FeeCard caption="Active PFDA winner" result={winner} tone="winner" />
-        </div>
-        <p className="model-footnote">Both paths retain the 25 bp LP fee. The model does not include price impact, routing, gas, native protocol fees, or token-transfer edge cases.</p>
-      </section>
-
-      <section className="value-section" aria-labelledby="value-title">
-        <div className="value-heading"><div><p className="eyebrow">Bid worksheet</p><h2 id="value-title">Does the right clear its own price?</h2><p>Estimate the app-surcharge savings you could actually capture during the fixed window, then subtract a first-price bid and gas.</p></div><span>ASSUMPTION MODEL · NOT A QUOTE</span></div>
-        <div className="value-grid">
-          <div className="value-inputs">
-            <ValueField label="Pool volume in right window" suffix="USDC" value={poolVolumeUsdc} onChange={setPoolVolumeUsdc} />
-            <ValueField label="Your expected capture" suffix="%" value={captureSharePercent} onChange={setCaptureSharePercent} />
-            <ValueField label="App surcharge waived" suffix="bp" value={surchargeBasisPoints} onChange={setSurchargeBasisPoints} />
-            <ValueField label="Your sealed bid" suffix="MockUSDC" value={valueBidUsdc} onChange={setValueBidUsdc} />
-            <ValueField label="Estimated gas" suffix="USDC" value={gasUsdc} onChange={setGasUsdc} />
+      <section id="economics" className="economics-terminal" aria-labelledby="economics-title">
+        <header className="economics-terminal-header">
+          <div>
+            <p className="eyebrow">Protocol economics</p>
+            <h2 id="economics-title">Is the fee right worth its price?</h2>
+            <p>Model the application surcharge that the right changes, then test the bid against the trading flow you expect to capture.</p>
           </div>
-          <article className={`value-verdict ${auctionValue.netValueUsdc >= 0 ? 'positive' : 'negative'}`}>
-            <span className="step-cap">Modelled net value</span><strong>{auctionValue.netValueUsdc >= 0 ? '+' : '−'}{displayUsdc(Math.abs(auctionValue.netValueUsdc))} <em>USDC</em></strong>
-            <p>{auctionValue.netValueUsdc >= 0 ? 'Expected surcharge savings exceed the entered bid and gas.' : 'The entered bid and gas exceed expected surcharge savings.'}</p>
-            <dl><div><dt>Eligible volume captured</dt><dd>{displayUsdc(auctionValue.eligibleVolumeUsdc)} USDC</dd></div><div><dt>App-surcharge savings</dt><dd>{displayUsdc(auctionValue.surchargeSavingsUsdc)} USDC</dd></div><div><dt>Bid + gas</dt><dd>{displayUsdc(auctionValue.allInCostUsdc)} USDC</dd></div></dl>
+          <div className="economics-stamp"><span>MODEL STATUS</span><strong>LOCAL ARITHMETIC</strong></div>
+        </header>
+
+        <div className="economics-board">
+          <aside className="terminal-assumptions" aria-label="Economic assumptions">
+            <div className="terminal-panel-head"><span>01 / assumptions</span><small>editable inputs</small></div>
+            <div className="terminal-assumption-list">
+              <label className="terminal-field" htmlFor="gross-input"><span>Trade input</span><div><input id="gross-input" inputMode="decimal" min="0" onChange={(event) => setGrossInput(event.target.value)} type="number" value={grossInput} /><b>USDC</b></div></label>
+              <ValueField label="Pool volume in right window" suffix="USDC" value={poolVolumeUsdc} onChange={setPoolVolumeUsdc} />
+              <ValueField label="Your expected capture" suffix="%" value={captureSharePercent} onChange={setCaptureSharePercent} />
+              <ValueField label="App surcharge assumption" suffix="bp" value={surchargeBasisPoints} onChange={setSurchargeBasisPoints} />
+              <ValueField label="Your sealed bid" suffix="MockUSDC" value={valueBidUsdc} onChange={setValueBidUsdc} />
+              <ValueField label="Estimated gas" suffix="USDC" value={gasUsdc} onChange={setGasUsdc} />
+            </div>
+          </aside>
+
+          <article className="fee-ledger" aria-label="Fee path ledger">
+            <div className="terminal-panel-head"><span>02 / fee path ledger</span><small>exact-input model</small></div>
+            <div className="ledger-meta"><span>KRA / KRB</span><span>LP fee stays <b>25 bp</b></span></div>
+            <div className="ledger-table-wrap">
+              <table>
+                <thead><tr><th scope="col">Route</th><th scope="col">Input</th><th scope="col">App fee</th><th scope="col">LP fee</th><th scope="col">Modelled value</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row"><span>Ordinary caller</span><small>baseline route</small></th><td>{displayUsdc(ordinary.grossInputUsdc)}</td><td>{displayUsdc(ordinary.surchargeUsdc)}</td><td>{displayUsdc(ordinary.lpFeeUsdc)}</td><td>{displayUsdc(ordinary.impliedOutputUsdc)}</td></tr>
+                  <tr className="ledger-winner"><th scope="row"><span>Active PFDA winner</span><small>right active</small></th><td>{displayUsdc(winner.grossInputUsdc)}</td><td>{displayUsdc(winner.surchargeUsdc)}</td><td>{displayUsdc(winner.lpFeeUsdc)}</td><td>{displayUsdc(winner.impliedOutputUsdc)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="fee-delta"><span>RIGHT DELTA</span><strong>+{displayUsdc(ordinary.surchargeUsdc - winner.surchargeUsdc)} USDC</strong><small>Application surcharge retained by the active winner; LP fee is unchanged.</small></div>
           </article>
-          <article className="break-even-card"><span className="step-cap">Break-even line</span><strong>{auctionValue.breakEvenPoolVolumeUsdc === null ? '—' : `${displayUsdc(auctionValue.breakEvenPoolVolumeUsdc)} USDC`}</strong><p>Pool volume needed at your capture share to cover bid + gas.</p><small>{auctionValue.breakEvenEligibleVolumeUsdc === null ? 'A positive surcharge rate is required.' : `${displayUsdc(auctionValue.breakEvenEligibleVolumeUsdc)} USDC of your own eligible flow is required.`}</small></article>
+
+          <article className={`terminal-decision ${auctionValue.netValueUsdc >= 0 ? 'positive' : 'negative'}`} aria-label="Bid decision">
+            <div className="terminal-panel-head"><span>03 / decision</span><small>{auctionValue.netValueUsdc >= 0 ? 'above threshold' : 'below threshold'}</small></div>
+            <span className="decision-label">Modelled net value</span>
+            <strong className="decision-value">{auctionValue.netValueUsdc >= 0 ? '+' : '−'}{displayUsdc(Math.abs(auctionValue.netValueUsdc))}<em>USDC</em></strong>
+            <p>{auctionValue.netValueUsdc >= 0 ? 'Expected surcharge savings cover the entered bid and gas.' : 'The entered bid and gas exceed expected surcharge savings.'}</p>
+            <dl>
+              <div><dt>Eligible flow</dt><dd>{displayUsdc(auctionValue.eligibleVolumeUsdc)} USDC</dd></div>
+              <div><dt>Surcharge saved</dt><dd>{displayUsdc(auctionValue.surchargeSavingsUsdc)} USDC</dd></div>
+              <div><dt>Bid + gas</dt><dd>{displayUsdc(auctionValue.allInCostUsdc)} USDC</dd></div>
+              <div><dt>Break-even pool</dt><dd>{auctionValue.breakEvenPoolVolumeUsdc === null ? '—' : `${displayUsdc(auctionValue.breakEvenPoolVolumeUsdc)} USDC`}</dd></div>
+            </dl>
+            <small className="decision-threshold">{auctionValue.breakEvenEligibleVolumeUsdc === null ? 'A positive surcharge rate and capture share are required.' : `${displayUsdc(auctionValue.breakEvenEligibleVolumeUsdc)} USDC of your eligible flow covers the entered cost.`}</small>
+          </article>
         </div>
-        <div className="sensitivity-strip"><div><span className="step-cap">Volume sensitivity</span><small>Only pool volume moves. Capture share, surcharge, bid, and gas remain fixed.</small></div><div className="sensitivity-cases">{valueSensitivity.map((item) => <div className={item.estimate.netValueUsdc >= 0 ? 'upside' : 'downside'} key={item.label}><span>{item.label}</span><strong>{item.estimate.netValueUsdc >= 0 ? '+' : '−'}{displayUsdc(Math.abs(item.estimate.netValueUsdc))} USDC</strong><small>{displayUsdc(item.estimate.eligibleVolumeUsdc)} eligible volume</small></div>)}</div></div>
-        <p className="value-footnote">This is an editable arithmetic scenario, not financial advice, an execution quote, a prediction of volume, or a guarantee that you win, can route the assumed share, or receive a surcharge waiver outside the active right.</p>
+
+        <div className="terminal-sensitivity" aria-label="Volume sensitivity">
+          <div className="terminal-sensitivity-label"><span>VOLUME SENSITIVITY</span><small>Only pool volume moves; all other assumptions stay fixed.</small></div>
+          <div className="terminal-sensitivity-cases">{valueSensitivity.map((item) => <div className={item.estimate.netValueUsdc >= 0 ? 'upside' : 'downside'} key={item.label}><span>{item.label}</span><strong>{item.estimate.netValueUsdc >= 0 ? '+' : '−'}{displayUsdc(Math.abs(item.estimate.netValueUsdc))} USDC</strong><small>{displayUsdc(item.estimate.eligibleVolumeUsdc)} eligible flow</small></div>)}</div>
+        </div>
+        <p className="terminal-boundary">Arithmetic scenario only—not a quote, forecast, or execution guarantee. Price impact, routing, gas variation, native protocol fees, and token-transfer edge cases are excluded.</p>
       </section>
 
       <section id="stack" className="deployment-section">
@@ -909,23 +930,9 @@ function App() {
   )
 }
 
-function FeeCard({ caption, result, tone }: { caption: string; result: ReturnType<typeof simulateTrade>; tone: 'ordinary' | 'winner' }) {
-  return (
-    <article className={`fee-card ${tone}`}>
-      <div className="fee-card-head"><span>{caption}</span><b>{tone === 'winner' ? 'RIGHT ACTIVE' : 'BASELINE'}</b></div>
-      <div className="output"><small>Modelled value after LP fee</small><strong>{displayUsdc(result.impliedOutputUsdc)} <em>USDC</em></strong></div>
-      <dl>
-        <div><dt>Gross input</dt><dd>{displayUsdc(result.grossInputUsdc)}</dd></div>
-        <div><dt>App surcharge</dt><dd>{displayUsdc(result.surchargeUsdc)}</dd></div>
-        <div><dt>LP fee (25 bp)</dt><dd>{displayUsdc(result.lpFeeUsdc)}</dd></div>
-      </dl>
-    </article>
-  )
-}
-
 function ValueField({ label, onChange, suffix, value }: { label: string; onChange: (value: string) => void; suffix: string; value: string }) {
   const id = `value-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
-  return <label htmlFor={id}><span>{label}</span><div><input id={id} inputMode="decimal" min="0" onChange={(event) => onChange(event.target.value)} type="number" value={value} /><b>{suffix}</b></div></label>
+  return <label className="value-field" htmlFor={id}><span>{label}</span><div><input id={id} inputMode="decimal" min="0" onChange={(event) => onChange(event.target.value)} type="number" value={value} /><b>{suffix}</b></div></label>
 }
 
 function DashboardView({ nowSeconds, snapshot }: { nowSeconds: bigint; snapshot: AuctionDashboard }) {
