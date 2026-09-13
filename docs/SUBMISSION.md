@@ -47,14 +47,16 @@ The [Uniswap Foundation prize page](https://ethglobal.com/events/ethonline2026/p
 | Public contract evidence | https://github.com/Sarnav07/Kairos/blob/main/docs/EVIDENCE.md |
 | AI and reuse disclosure | https://github.com/Sarnav07/Kairos/blob/main/docs/AI_USAGE.md |
 | Developer feedback file | https://github.com/Sarnav07/Kairos/blob/main/FEEDBACK.md |
-| Live demo | **Pending: add only after a deployment URL resolves** |
+| Live demo | https://kairos-lemon-delta.vercel.app |
 | Demo video | **Pending: add only after the narrated 2–4 minute upload resolves** |
 
 ### Upload assets
 
-1. Cover/background image: `docs/assets/kairos-landing.jpg`.
-2. Product screenshot: `docs/assets/kairos-live-desk.jpg`.
-3. Controls screenshot: `docs/assets/kairos-auction-flow.jpg`.
+1. Square logo: `docs/assets/kairos-logo.png`.
+2. Cover/background image: `docs/assets/kairos-landing.jpg`.
+3. Landing-page screenshot: `docs/assets/kairos-landing.jpg`.
+4. Product screenshot: `docs/assets/kairos-live-desk.jpg`.
+5. Controls screenshot: `docs/assets/kairos-auction-flow.jpg`.
 
 ## Uniswap partner-prize response
 
@@ -115,7 +117,7 @@ The prototype does not claim to waive native Uniswap protocol fees, all swap fee
 | `FEEDBACK.md` in the public repository | Ready | [Public FEEDBACK.md](https://github.com/Sarnav07/Kairos/blob/main/FEEDBACK.md) contains actual implementation observations. |
 | Feedback form submitted with public `FEEDBACK.md` link | Pending user account action | Submit [Uniswap Developer Feedback Form](https://developers.uniswap.org/hackathon-feedback) with the resolved public URL. |
 | README links to relevant contracts and lines | Ready locally | See the code map in [README](../README.md). |
-| Demonstrable application | Ready; rehearsal pending | React workstation with live wallet-confirmed bidder and immutable-deployer controls, encrypted local bid vault, read-only event dashboard and assumption-labelled bid worksheet, plus source-tested ERC-2612 capability detection. The public deployment remains on ordinary approval pending a compatible redeployment/rehearsal; 18 frontend tests and 90 passing Solidity tests. |
+| Demonstrable application | Ready; public rehearsal verified | React workstation deployed at [kairos-lemon-delta.vercel.app](https://kairos-lemon-delta.vercel.app), with live wallet-confirmed bidder and immutable-deployer controls, encrypted local bid vault, read-only event dashboard and assumption-labelled bid worksheet, plus source-tested ERC-2612 capability detection. The production browser rehearsal reaches the Active phase with five clearly labelled local receipts; 18 frontend tests and 90 passing Solidity tests. |
 | Verified testnet contract and pool addresses | Ready; auction rehearsal pending | See the [public evidence register](EVIDENCE.md), [deployment manifest](../deployments/unichain-sepolia.json), and [TESTNET.md](TESTNET.md). |
 | Demo video | Pending recording | Record the script in [DEMO.md](DEMO.md) and publish its URL in the project showcase. |
 
