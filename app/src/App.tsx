@@ -53,6 +53,7 @@ import {
   type AuctionDashboard,
 } from './lib/dashboard'
 import { calculateAuctionValue, sensitivityEstimates } from './lib/value'
+import { LandingExperience } from './components/LandingExperience'
 
 type Phase = 'Schedule' | 'Commit' | 'Reveal' | 'Settle' | 'Active'
 
@@ -99,6 +100,9 @@ const auction = {
 }
 
 function App() {
+  const [screen, setScreen] = useState<'landing' | 'desk'>(() => (
+    typeof window !== 'undefined' && window.location.hash === '#desk' ? 'desk' : 'landing'
+  ))
   const [phaseIndex, setPhaseIndex] = useState(0)
   const [bidUsdc, setBidUsdc] = useState('24.50')
   const [secret, setSecret] = useState<BidSecret | null>(null)
@@ -131,7 +135,10 @@ function App() {
   const [gasUsdc, setGasUsdc] = useState('8')
   const [dashboard, setDashboard] = useState<DashboardState>({ status: 'idle', snapshot: null })
   const [dashboardNow, setDashboardNow] = useState(() => Date.now())
+  const [guidedDemoRunning, setGuidedDemoRunning] = useState(false)
+  const [guidedDemoStatus, setGuidedDemoStatus] = useState('Ready to rehearse all five phases with local receipts.')
   const inputRef = useRef<HTMLInputElement>(null)
+  const receiptIdRef = useRef(0)
 
   const ordinary = useMemo(
     () => simulateTrade({ grossInputUsdc: Number(grossInput), lpFeePpm: 2_500, surchargePpm: 500 }, false),
@@ -485,34 +492,140 @@ function App() {
   }
 
   function addReceipt(title: string, detail: string, receiptPhase: Phase) {
-    setReceipts((current) => [{ id: Date.now(), title, detail, phase: receiptPhase }, ...current])
+    const id = ++receiptIdRef.current
+    setReceipts((current) => [{ id, title, detail, phase: receiptPhase }, ...current])
+  }
+
+  async function runGuidedDemo() {
+    if (guidedDemoRunning) return
+    setGuidedDemoRunning(true)
+    setReceipts([])
+    setPhaseIndex(0)
+    setGuidedDemoStatus('01 · Auction terms fixed. Preparing a recoverable sealed bid…')
+
+    try {
+      const demoSecret = createBidSecret({
+        chainId: DEMO_CHAIN_ID,
+        auctionAddress: DEMO_AUCTION_ADDRESS,
+        auctionId: auction.id,
+        bidder: DEMO_BIDDER,
+        bidUsdc: normalizedBid(bidUsdc),
+      })
+      setSecret(demoSecret)
+      setNotice('Guided rehearsal created the recovery data before committing.')
+      await demoPause(650)
+
+      setPhaseIndex(1)
+      addReceipt('Commit simulated', `Commitment ${shortHash(demoSecret.commitment)} recorded. The bid amount remains hidden.`, 'Commit')
+      setGuidedDemoStatus('02 · Commitment recorded. The amount is still hidden.')
+      await demoPause(700)
+
+      setPhaseIndex(2)
+      addReceipt('Reveal simulated', `${demoSecret.bidUsdc} USDC bid plus 5.00 USDC bond escrowed.`, 'Reveal')
+      setGuidedDemoStatus('03 · Bid and salt revealed. Settlement can now verify the commitment.')
+      await demoPause(700)
+
+      setPhaseIndex(3)
+      addReceipt('Settlement simulated', 'Highest valid bid selected; proceeds credit the deployer wallet.', 'Settle')
+      addReceipt('Loser refund simulated', 'A revealed losing bidder claims its bid and 5.00 USDC commitment bond.', 'Settle')
+      setGuidedDemoStatus('04 · Highest valid bid won. Proceeds and refunds are accounted for.')
+      await demoPause(700)
+
+      setPhaseIndex(4)
+      addReceipt('Eligible swap simulated', 'Winning address calls the executor; the app surcharge is waived for this pool swap.', 'Active')
+      setNotice('Guided rehearsal complete. The active right waives only the application surcharge.')
+      setGuidedDemoStatus('05 · Right active. Five receipts prove the complete local rehearsal.')
+    } catch {
+      setGuidedDemoStatus('The rehearsal stopped because the bid amount is invalid. Enter at least 10 USDC.')
+    } finally {
+      setGuidedDemoRunning(false)
+    }
+  }
+
+  function openDesk() {
+    window.history.pushState(null, '', '#desk')
+    setScreen('desk')
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }
+
+  function openLanding() {
+    window.history.pushState(null, '', window.location.pathname)
+    setScreen('landing')
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }
+
+  if (screen === 'landing') {
+    return (
+      <LandingExperience
+        phase={phase.name}
+        protocolReady={protocol.status === 'ready' && Boolean(protocol.snapshot?.wiringValid)}
+        onEnterDesk={openDesk}
+      />
+    )
   }
 
   return (
-    <main className="shell">
+    <main className="shell desk-shell">
+      <a className="skip-link" href="#live-desk">Skip to auction controls</a>
       <header className="masthead">
-        <a className="brand" href="#top" aria-label="PFDA workstation home">
-          <span className="brand-mark" aria-hidden="true">P</span>
-          <span>PFDA <em>workstation</em></span>
-        </a>
+        <button className="brand brand-button" onClick={openLanding} type="button" aria-label="Return to Kairos home">
+          <span className="brand-mark" aria-hidden="true">K</span>
+          <span>KAIROS <em>· LIVE DESK</em></span>
+        </button>
+        <nav aria-label="Auction desk sections" className="masthead-nav">
+          <a href="#lifecycle">Lifecycle</a><a href="#evidence">Evidence</a><a href="#live-desk">Actions</a><a href="#economics">Economics</a>
+        </nav>
         <div className="masthead-right">
           <span className={`network-chip wallet-chip ${wallet.status}`}><i /> {walletLabel(wallet)}</span>
           <button className="connect-button" onClick={connectWallet} type="button">{walletAction(wallet)}</button>
         </div>
       </header>
 
-      <section id="top" className="intro">
-        <div>
-          <p className="eyebrow">Sealed first-price right</p>
-          <h1>Prepare the bid.<br /><span>Protect the secret.</span></h1>
+      <section className="desk-showcase" aria-labelledby="desk-showcase-title">
+        <div className="desk-showcase-grid" aria-hidden="true" />
+        <div className="desk-showcase-copy">
+          <span className="desk-showcase-kicker"><i /> LIVE AUCTION WORKSTATION</span>
+          <h1 id="desk-showcase-title">Watch the auction<br /><span>settle — live.</span></h1>
+          <div className="desk-showcase-rail" aria-label={`Current demonstration phase: ${phase.name}`}>
+            {phases.map((item, index) => <i className={index <= phaseIndex ? 'reached' : ''} key={item.name} />)}
+          </div>
+          <div className="desk-showcase-handoff">
+            <span>▼ &nbsp;THE LIVE DESK</span>
+            <h2>A complete rehearsal is waiting.</h2>
+            <p>Generate a secret, commit, reveal, settle and activate the temporary fee right. Every step writes a labelled local receipt below.</p>
+            <button className="desk-demo-button" disabled={guidedDemoRunning} onClick={runGuidedDemo} type="button">
+              {guidedDemoRunning ? 'Rehearsal running…' : receipts.length >= 5 && phase.name === 'Active' ? 'Run rehearsal again' : 'Run full rehearsal'} <b>→</b>
+            </button>
+            <small aria-live="polite">{guidedDemoStatus}</small>
+          </div>
         </div>
-        <p className="intro-copy">
-          A real Unichain Sepolia runtime beside a guided local auction demo. Read-only wiring is checked against
-          the deployed stack; live actions require an explicit wallet confirmation and simulator receipts remain off-chain.
-        </p>
       </section>
 
-      <section className="ribbon-wrap" aria-label="Auction timeline">
+      <section className="desk-stats" aria-label="Auction desk statistics">
+        <div><strong>{phase.name}</strong><span>Current phase</span></div>
+        <div><strong>#{liveAuctionId}</strong><span>Auction selected</span></div>
+        <div><strong>{receipts.length}</strong><span>Local receipts</span></div>
+        <div><strong>{protocol.status === 'ready' && protocol.snapshot?.wiringValid ? 'VALID' : 'CHECK'}</strong><span>Contract wiring</span></div>
+        <div><strong>{wallet.status === 'connected' ? 'READY' : 'OFF'}</strong><span>Wallet writes</span></div>
+        <div><strong>1301</strong><span>Unichain Sepolia</span></div>
+      </section>
+
+      <section id="top" className="intro">
+        <div>
+          <p className="eyebrow">Kairos / Unichain Sepolia / 1301</p>
+          <h1>A temporary fee right.<br /><span>One accountable auction.</span></h1>
+        </div>
+        <p className="intro-copy">
+          An operator desk for sealed first-price allocation. Read-only wiring is checked against the deployed stack;
+          live actions require an explicit wallet confirmation and local simulator receipts never impersonate on-chain evidence.
+        </p>
+        <aside className="intro-visual" aria-label="Auction status summary">
+          <span className="signal-orbit" aria-hidden="true"><i /><i /><i /></span>
+          <div><small>RIGHT STATUS</small><strong>{phase.name}</strong><p>App surcharge only · LP fees remain unchanged</p></div>
+        </aside>
+      </section>
+
+      <section id="lifecycle" className="ribbon-wrap" aria-label="Auction timeline">
         <div className="ribbon-note"><span className="pulse" /> LOCAL DEMO CLOCK · {phase.name.toUpperCase()}</div>
         <div className="phase-ribbon">
           {phases.map((item, index) => (
@@ -550,7 +663,7 @@ function App() {
         </div>
       </section>
 
-      <section className="dashboard-section" aria-label="Live auction dashboard">
+      <section id="evidence" className="dashboard-section" aria-label="Live auction dashboard">
         <div className="dashboard-heading">
           <div><p className="eyebrow">Live evidence dashboard</p><h2>The auction tape tells the story.</h2></div>
           <div className="dashboard-load"><label htmlFor="dashboard-auction-id">Auction ID<input id="dashboard-auction-id" inputMode="numeric" min="1" onChange={(event) => { setLiveAuctionId(event.target.value); setBidPreflight(null); setLiveSecret(null); setDashboard({ status: 'idle', snapshot: null }) }} type="number" value={liveAuctionId} /></label><button className="button outline" onClick={() => loadDashboard()} type="button">{dashboard.status === 'loading' ? 'Loading…' : 'Load evidence'}</button></div>
@@ -560,7 +673,7 @@ function App() {
         )}
       </section>
 
-      <section className="live-control-grid" aria-label="Live bidder and operator controls">
+      <section id="live-desk" className="live-control-grid" aria-label="Live bidder and operator controls">
         <article className="live-panel bidder-panel">
           <div className="panel-topline"><p className="eyebrow">Live bidder flow</p><span className="live-tag">WALLET CONFIRMED WRITES</span></div>
           <h2>Commit only what you can reveal.</h2>
@@ -732,7 +845,7 @@ function App() {
         </aside>
       </section>
 
-      <section className="model-section" aria-labelledby="model-title">
+      <section id="economics" className="model-section" aria-labelledby="model-title">
         <div className="model-heading">
           <p className="eyebrow">Scenario runner</p>
           <h2 id="model-title">What the right changes — and what it does not.</h2>
@@ -771,7 +884,7 @@ function App() {
         <p className="value-footnote">This is an editable arithmetic scenario, not financial advice, an execution quote, a prediction of volume, or a guarantee that you win, can route the assumed share, or receive a surcharge waiver outside the active right.</p>
       </section>
 
-      <section className="deployment-section">
+      <section id="stack" className="deployment-section">
         <div>
           <p className="eyebrow">Live testnet runtime</p>
           <h2>Addresses are real. Writes are wallet-gated.</h2>
@@ -791,7 +904,7 @@ function App() {
         )}
       </section>
 
-      <footer><span>PFDA prototype · Unichain Sepolia wallet mode + local demo</span><span>Full waiver of the app-level surcharge only</span></footer>
+      <footer><span>Kairos · Unichain Sepolia auction desk + local rehearsal</span><span>Waives the app surcharge only · not LP or native protocol fees</span></footer>
     </main>
   )
 }
@@ -884,6 +997,10 @@ function normalizedBid(value: string): string {
 function inputNumber(value: string): number {
   const number = Number(value)
   return Number.isFinite(number) ? number : 0
+}
+
+function demoPause(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 }
 
 function shortHash(value: string): string {

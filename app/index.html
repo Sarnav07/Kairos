@@ -3,11 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#071b33" />
-    <title>PFDA Workstation</title>
+    <meta name="theme-color" content="#080b10" />
+    <meta name="description" content="Kairos is a sealed first-price PFDA auction desk for a temporary application-fee waiver on Unichain Sepolia." />
+    <meta property="og:title" content="Kairos · PFDA auction desk" />
+    <meta property="og:description" content="A sealed first-price auction for a temporary application-fee waiver on Unichain Sepolia." />
+    <title>Kairos · PFDA auction desk</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main style="min-height:100vh;display:grid;place-items:center;margin:0;background:#080b10;color:#e8edf7;font:16px/1.5 system-ui,sans-serif">
+        <section style="max-width:42rem;padding:2rem;border:1px solid #293246;background:#101722">
+          <p style="margin:0 0 .5rem;color:#86a3ff;font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase">Kairos preview</p>
+          <h1 style="margin:0 0 .75rem;font:700 clamp(2rem,7vw,4rem)/.95 Georgia,serif">Start the local app server.</h1>
+          <p style="margin:0 0 1rem;color:#b8c1d1">This is the source entry file. It cannot run directly from <code>file://</code> because Kairos uses React and TypeScript.</p>
+          <code style="display:block;overflow:auto;padding:1rem;background:#080b10;color:#8fe0b3">cd /Users/sarnav07/Projects/EthGlobal/app && npm run dev</code>
+          <p style="margin:1rem 0 0;color:#b8c1d1">Then open the localhost address Vite prints in the terminal (normally <code>http://127.0.0.1:5173</code>).</p>
+        </section>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
